@@ -7,4 +7,18 @@ edition = "2021"
 
 [dependencies]
 abi_stable = "0.11.1"
+clap = { version = "4.0.32", features = ["derive"] }
+dashmap = "5.4.0"
+eframe = "0.20.1"
+egui = "0.20.1"
+egui_extras = { version = "0.20.0", features = ["svg", "image"] }
+image = { version = "0.24.5", default-features = false, features = ["png"] }
+log = "0.4.17"
 rmenu-plugin = { version = "0.1.0", path = "../rmenu-plugin", features = ["rmenu_internals"] }
+serde = { version = "1.0.152", features = ["derive"] }
+shellexpand = "3.0.0"
+toml = "0.5.10"
+
+[patch.crates-io]
+eframe = { git = "https://github.com/imgurbot12/egui", branch="feat/grid-color" }
+egui = { git = "https://github.com/imgurbot12/egui", branch="feat/grid-color" }

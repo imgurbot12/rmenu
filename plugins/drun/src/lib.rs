@@ -16,7 +16,7 @@ static PREFIX: &str = "app";
 
 static XDG_DATA_DIRS: &str = "XDG_DATA_DIRS";
 
-static DEFAULT_XDG_PATHS: &str = "/usr/share/";
+static DEFAULT_XDG_PATHS: &str = "/usr/share/:/usr/local/share";
 static DEFAULT_APP_PATHS: &str = "";
 static DEFAULT_ICON_PATHS: &str = "/usr/share/pixmaps/";
 

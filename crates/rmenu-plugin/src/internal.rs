@@ -1,7 +1,6 @@
 /*
  *  Internal Library Loading Implementation
  */
-use abi_stable::std_types::{RBox, RHashMap, RString};
 use libloading::{Error, Library, Symbol};
 
 use super::{Module, ModuleConfig};
