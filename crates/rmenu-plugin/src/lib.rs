@@ -25,6 +25,7 @@ pub enum Exec {
 #[cfg_attr(feature = "cache", derive(Serialize, Deserialize))]
 pub struct Icon {
     pub name: RString,
+    pub path: RString,
     pub data: RVec<u8>,
 }
 

@@ -24,9 +24,11 @@ pub struct PluginConfig {
 pub struct RMenuConfig {
     pub terminal: String,
     pub icon_size: f32,
-    pub window_width: f32,
-    pub window_height: f32,
-    pub result_size: usize,
+    pub centered: Option<bool>,
+    pub window_pos: Option<[f32; 2]>,
+    pub window_size: Option<[f32; 2]>,
+    pub result_size: Option<usize>,
+    pub decorate_window: bool,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -41,9 +43,11 @@ impl Default for Config {
             rmenu: RMenuConfig {
                 terminal: "foot".to_owned(),
                 icon_size: 20.0,
-                window_width: 500.0,
-                window_height: 300.0,
-                result_size: 15,
+                centered: Some(true),
+                window_pos: None,
+                window_size: Some([500.0, 300.0]),
+                result_size: Some(15),
+                decorate_window: false,
             },
             plugins: HashMap::new(),
         }
@@ -75,7 +79,10 @@ pub fn load_config(path: Option<String>) -> Config {
             // write default config to standard location
             let config = Config::default();
             if path.is_none() {
-                fs::create_dir(get_config_dir()).expect("failed to make config dir");
+                let dir = get_config_dir();
+                if !dir.exists() {
+                    fs::create_dir(dir).expect("failed to make config dir");
+                }
                 let default = toml::to_string(&config).unwrap();
                 fs::write(fpath, default).expect("failed to write default config");
             }

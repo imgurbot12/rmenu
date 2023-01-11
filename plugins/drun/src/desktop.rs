@@ -60,6 +60,7 @@ fn read_icon(name: &str, icons: &Vec<IconFile>) -> Option<Icon> {
     let Ok(data) = fs::read(&path) else { return None };
     Some(Icon {
         name: RString::from(name),
+        path: RString::from(path),
         data: RVec::from(data),
     })
 }

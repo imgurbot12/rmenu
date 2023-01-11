@@ -47,13 +47,14 @@ impl IconCache {
     // save icon to cache if not already saved
     pub fn save(&mut self, icon: &Icon) -> Result<(), String> {
         let name = icon.name.as_str();
+        let path = icon.path.as_str();
         if !self.c.contains_key(name) {
             self.c.insert(
                 name.to_owned(),
-                if name.ends_with(".svg") {
-                    RetainedImage::from_svg_bytes(name, &icon.data)?
+                if path.ends_with(".svg") {
+                    RetainedImage::from_svg_bytes(path, &icon.data)?
                 } else {
-                    RetainedImage::from_image_bytes(name, &icon.data)?
+                    RetainedImage::from_image_bytes(path, &icon.data)?
                 },
             );
         }
