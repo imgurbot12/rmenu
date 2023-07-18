@@ -1,7 +1,10 @@
 use std::fs::{read_to_string, File};
 use std::io::{prelude::*, BufReader, Error};
 
+mod config;
 mod gui;
+mod search;
+mod state;
 
 use clap::*;
 use rmenu_plugin::Entry;
@@ -24,7 +27,13 @@ pub struct Args {
 }
 
 //TODO: improve search w/ options for regex/case-insensivity/modes?
+//TODO: add secondary menu for sub-actions aside from the main action
 //TODO: improve looks and css
+
+//TODO: config
+//  - default and cli accessable modules (instead of piped in)
+//  - allow/disable icons (also available via CLI)
+//  - custom keybindings (some available via CLI?)
 
 /// Application State for GUI
 #[derive(Debug, PartialEq)]
@@ -32,14 +41,14 @@ pub struct App {
     css: String,
     name: String,
     entries: Vec<Entry>,
+    config: config::Config,
 }
 
 fn default(args: &Args) -> Result<App, Error> {
     // read entries from specified input
-    let fpath = if args.input == "-" {
-        "/dev/stdin"
-    } else {
-        &args.input
+    let fpath = match args.input.as_str() {
+        "-" => "/dev/stdin",
+        _ => &args.input,
     };
     let file = File::open(fpath)?;
     let reader = BufReader::new(file);
@@ -57,6 +66,7 @@ fn default(args: &Args) -> Result<App, Error> {
         name: "default".to_string(),
         css: read_to_string(css)?,
         entries,
+        config: Default::default(),
     };
     Ok(args)
 }

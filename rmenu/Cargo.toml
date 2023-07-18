@@ -1,5 +1,5 @@
 [package]
-name = "rmenu"
+name    = "rmenu"
 version = "0.0.0"
 edition = "2021"
 
@@ -7,12 +7,10 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4.3.15", features = ["derive"] }
-dioxus = "0.3.2"
+dioxus = { git = "https://github.com/DioxusLabs/dioxus", version = "0.3.2" }
+dioxus-desktop = { git = "https://github.com/DioxusLabs/dioxus", version = "0.3.0" }
+keyboard-types = "0.6.2"
+regex = { version = "1.9.1", features = ["pattern"] }
 rmenu-plugin = { version = "0.0.0", path = "../rmenu-plugin" }
+serde = { version = "1.0.171", features = ["derive"] }
 serde_json = "1.0.103"
-
-[target.'cfg(any(unix, windows))'.dependencies]
-dioxus-desktop = { version = "0.3.0" }
-
-[target.'cfg(target_family = "wasm")'.dependencies]
-dioxus-web = { version = "0.3.1" }
