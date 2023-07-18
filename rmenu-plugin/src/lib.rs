@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub enum Method {
@@ -9,6 +8,7 @@ pub enum Method {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Action {
+    pub name: String,
     pub exec: String,
     pub comment: Option<String>,
 }
@@ -16,7 +16,7 @@ pub struct Action {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
     pub name: String,
-    pub actions: BTreeMap<String, Action>,
+    pub actions: Vec<Action>,
     pub comment: Option<String>,
     pub icon: Option<String>,
 }
