@@ -1,0 +1,40 @@
+main {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+input {
+  min-width: 99%;
+}
+
+div.result {
+  display: flex;
+  align-items: center;
+  justify-content: left;
+}
+
+div.result > div {
+  margin: 2px 5px;
+}
+
+div.result > div.icon {
+  width: 4%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+div.result > div.icon > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+div.result > div.name {
+  width: 30%;
+}
+
+div.result > div.comment {
+  flex: 1;
+}
