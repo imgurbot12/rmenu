@@ -13,44 +13,90 @@ pub fn run(app: App) {
 
 #[derive(PartialEq, Props)]
 struct GEntry<'a> {
-    i: usize,
-    o: &'a Entry,
-    selected: bool,
+    index: usize,
+    entry: &'a Entry,
+    pos: usize,
+    subpos: usize,
 }
 
 fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
-    let classes = if cx.props.selected { "selected" } else { "" };
+    // build css classes for result and actions (if nessesary)
+    let main_select = cx.props.index == cx.props.pos;
+    let action_select = main_select && cx.props.subpos > 0;
+    let action_classes = match action_select {
+        true => "active",
+        false => "",
+    };
+    let result_classes = match main_select && !action_select {
+        true => "selected",
+        false => "",
+    };
+    // build sub-actions if present
+    let actions = cx
+        .props
+        .entry
+        .actions
+        .iter()
+        .skip(1)
+        .enumerate()
+        .map(|(idx, action)| {
+            let act_class = match action_select && idx + 1 == cx.props.subpos {
+                true => "selected",
+                false => "",
+            };
+            cx.render(rsx! {
+                div {
+                    class: "action {act_class}",
+                    div {
+                        class: "action-name",
+                        "{action.name}"
+                    }
+                    div {
+                        class: "action-comment",
+                        if let Some(comment) = action.comment.as_ref() {
+                            format!("- {comment}")
+                        }
+                    }
+                }
+            })
+        });
     cx.render(rsx! {
         div {
-            id: "result-{cx.props.i}",
-            class: "result {classes}",
+            id: "result-{cx.props.index}",
+            class: "result {result_classes}",
             div {
                 class: "icon",
-                if let Some(icon) = cx.props.o.icon.as_ref() {
+                if let Some(icon) = cx.props.entry.icon.as_ref() {
                     cx.render(rsx! { img { src: "{icon}" } })
                 }
             }
             div {
                 class: "name",
-                "{cx.props.o.name}"
+                "{cx.props.entry.name}"
             }
             div {
                 class: "comment",
-                if let Some(comment) = cx.props.o.comment.as_ref() {
+                if let Some(comment) = cx.props.entry.comment.as_ref() {
                     format!("- {comment}")
                 }
             }
+        }
+        div {
+            id: "result-{cx.props.index}-actions",
+            class: "actions {action_classes}",
+            actions.into_iter()
         }
     })
 }
 
 fn App(cx: Scope<App>) -> Element {
     let search = use_state(cx, || "".to_string());
-    let position = use_state(cx, || 0);
 
     // retrieve build results tracker
     let results = &cx.props.entries;
-    let mut tracker = PosTracker::new(position, results);
+    let tracker = PosTracker::new(cx, results);
+    let (pos, subpos) = tracker.position();
+    println!("pos: {pos}, {subpos}");
 
     // keyboard events
     let eval = dioxus_desktop::use_eval(cx);
@@ -60,8 +106,14 @@ fn App(cx: Scope<App>) -> Element {
             Code::ArrowUp => tracker.shift_up(),
             Code::ArrowDown => tracker.shift_down(),
             Code::Tab => match evt.modifiers().contains(Modifiers::SHIFT) {
-                true => tracker.close_menu(),
-                false => tracker.open_menu(),
+                true => {
+                    println!("close menu");
+                    tracker.close_menu()
+                }
+                false => {
+                    println!("open menu!");
+                    tracker.open_menu()
+                }
             },
             _ => println!("key: {:?}", evt.key()),
         }
@@ -76,9 +128,14 @@ fn App(cx: Scope<App>) -> Element {
         .iter()
         .filter(|entry| searchfn(entry))
         .enumerate()
-        .map(|(i, entry)| {
+        .map(|(index, entry)| {
             cx.render(rsx! {
-                TableEntry{ i: i, o: entry, selected: (i + 1) == active }
+                TableEntry{
+                    index: index,
+                    entry: entry,
+                    pos:   pos,
+                    subpos: subpos,
+                }
             })
         })
         .collect();

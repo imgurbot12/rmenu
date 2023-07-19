@@ -31,7 +31,7 @@ macro_rules! search {
 /// Generate a new dynamic Search Function based on
 /// Configurtaion Settigns and Search-String
 pub fn new_searchfn(cfg: &Config, search: &str) -> Box<dyn Fn(&Entry) -> bool> {
-    if cfg.regex {
+    if cfg.search_regex {
         let regex = RegexBuilder::new(search)
             .case_insensitive(cfg.ignore_case)
             .build();

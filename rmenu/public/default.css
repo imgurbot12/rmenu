@@ -8,17 +8,19 @@ input {
   min-width: 99%;
 }
 
-div.result {
+div.selected {
+  background-color: lightblue;
+}
+
+/* Result CSS */
+
+div.result, div.action {
   display: flex;
   align-items: center;
   justify-content: left;
 }
 
-div.selected {
-  background-color: lightblue;
-}
-
-div.result > div {
+div.result > div, div.action > div {
   margin: 2px 5px;
 }
 
@@ -41,4 +43,17 @@ div.result > div.name {
 
 div.result > div.comment {
   flex: 1;
+}
+
+/* Action CSS */
+
+div.actions {
+  display: none;
+  padding-left: 5%;
+}
+
+div.actions.active {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
