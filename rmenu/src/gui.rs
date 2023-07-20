@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use keyboard_types::{Code, Modifiers};
 use rmenu_plugin::Entry;
 
+use crate::config::Config;
 use crate::search::new_searchfn;
 use crate::state::PosTracker;
 use crate::App;
@@ -15,6 +16,7 @@ pub fn run(app: App) {
 struct GEntry<'a> {
     index: usize,
     entry: &'a Entry,
+    config: &'a Config,
     pos: usize,
     subpos: usize,
 }
@@ -64,11 +66,15 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
         div {
             id: "result-{cx.props.index}",
             class: "result {result_classes}",
-            div {
-                class: "icon",
-                if let Some(icon) = cx.props.entry.icon.as_ref() {
-                    cx.render(rsx! { img { src: "{icon}" } })
-                }
+            if cx.props.config.use_icons {
+                cx.render(rsx! {
+                    div {
+                        class: "icon",
+                        if let Some(icon) = cx.props.entry.icon.as_ref() {
+                            cx.render(rsx! { img { src: "{icon}" } })
+                        }
+                    }
+                })
             }
             div {
                 class: "name",
@@ -133,6 +139,7 @@ fn App(cx: Scope<App>) -> Element {
                 TableEntry{
                     index: index,
                     entry: entry,
+                    config: &cx.props.config,
                     pos:   pos,
                     subpos: subpos,
                 }
