@@ -9,5 +9,6 @@ pub fn execute(action: &Action) {
         Ok(args) => args,
         Err(err) => panic!("{:?} invalid command {err}", action.exec),
     };
-    Command::new(&args[0]).args(&args[1..]).exec();
+    let err = Command::new(&args[0]).args(&args[1..]).exec();
+    panic!("Command Error: {err:?}");
 }

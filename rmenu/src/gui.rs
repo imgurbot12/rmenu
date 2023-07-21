@@ -156,9 +156,17 @@ fn App(cx: Scope<App>) -> Element {
         std::process::exit(0);
     }
 
+    // retrieve results and filter based on search
+    let searchfn = new_searchfn(&cx.props.config, &search);
+    let results: Vec<&Entry> = cx
+        .props
+        .entries
+        .iter()
+        .filter(|entry| searchfn(entry))
+        .collect();
+
     // retrieve results build and build position-tracker
-    let results = &cx.props.entries;
-    let tracker = PosTracker::new(cx, results);
+    let tracker = PosTracker::new(cx, results.clone());
     let (pos, subpos) = tracker.position();
     log::debug!("pos: {pos}, {subpos}");
 
@@ -168,7 +176,12 @@ fn App(cx: Scope<App>) -> Element {
         let key = &evt.code();
         let mods = &evt.modifiers();
         log::debug!("key: {key:?} mods: {mods:?}");
-        if matches(&keybinds.exit, mods, key) {
+        if matches(&keybinds.exec, mods, key) {
+            match tracker.action() {
+                Some(action) => execute(action),
+                None => panic!("No Action Configured"),
+            }
+        } else if matches(&keybinds.exit, mods, key) {
             quit.set(true);
         } else if matches(&keybinds.move_up, mods, key) {
             tracker.shift_up();
@@ -184,10 +197,8 @@ fn App(cx: Scope<App>) -> Element {
     };
 
     // pre-render results into elements
-    let searchfn = new_searchfn(&cx.props.config, &search);
     let results_rendered: Vec<Element> = results
         .iter()
-        .filter(|entry| searchfn(entry))
         .enumerate()
         .map(|(index, entry)| {
             cx.render(rsx! {

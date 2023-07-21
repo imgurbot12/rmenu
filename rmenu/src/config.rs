@@ -75,6 +75,7 @@ impl<'de> Deserialize<'de> for Keybind {
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct KeyConfig {
+    pub exec: Vec<Keybind>,
     pub exit: Vec<Keybind>,
     pub move_up: Vec<Keybind>,
     pub move_down: Vec<Keybind>,
@@ -87,6 +88,7 @@ pub struct KeyConfig {
 impl Default for KeyConfig {
     fn default() -> Self {
         return Self {
+            exec: vec![Keybind::new(Code::Enter)],
             exit: vec![Keybind::new(Code::Escape)],
             move_up: vec![Keybind::new(Code::ArrowUp)],
             move_down: vec![Keybind::new(Code::ArrowDown)],

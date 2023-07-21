@@ -52,6 +52,10 @@ div.actions {
   padding-left: 5%;
 }
 
+div.action-name {
+  width: 10%;
+}
+
 div.actions.active {
   display: flex;
   flex-direction: column;

@@ -1,6 +1,6 @@
 //! GUI Application State Trackers and Utilities
 use dioxus::prelude::{use_state, Scope, UseState};
-use rmenu_plugin::Entry;
+use rmenu_plugin::{Action, Entry};
 
 use crate::App;
 
@@ -8,21 +8,11 @@ use crate::App;
 pub struct PosTracker<'a> {
     pos: &'a UseState<usize>,
     subpos: &'a UseState<usize>,
-    results: &'a Vec<Entry>,
-}
-
-impl<'a> Clone for PosTracker<'a> {
-    fn clone(&self) -> Self {
-        Self {
-            pos: self.pos,
-            subpos: self.subpos,
-            results: self.results,
-        }
-    }
+    results: Vec<&'a Entry>,
 }
 
 impl<'a> PosTracker<'a> {
-    pub fn new(cx: Scope<'a, App>, results: &'a Vec<Entry>) -> Self {
+    pub fn new(cx: Scope<'a, App>, results: Vec<&'a Entry>) -> Self {
         let pos = use_state(cx, || 0);
         let subpos = use_state(cx, || 0);
         Self {
@@ -45,6 +35,11 @@ impl<'a> PosTracker<'a> {
     /// Get Current Position/SubPosition
     pub fn position(&self) -> (usize, usize) {
         (self.pos.get().clone(), self.subpos.get().clone())
+    }
+    /// Get Action Linked To The Current Position
+    pub fn action(&self) -> Option<&Action> {
+        let (pos, subpos) = self.position();
+        self.results[pos].actions.get(subpos)
     }
     /// Move Position To SubMenu if it Exists
     pub fn open_menu(&self) {
