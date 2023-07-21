@@ -1,13 +1,24 @@
-/// Application State Trackers and Utilities
+//! GUI Application State Trackers and Utilities
 use dioxus::prelude::{use_state, Scope, UseState};
 use rmenu_plugin::Entry;
 
 use crate::App;
 
+#[derive(PartialEq)]
 pub struct PosTracker<'a> {
     pos: &'a UseState<usize>,
     subpos: &'a UseState<usize>,
     results: &'a Vec<Entry>,
+}
+
+impl<'a> Clone for PosTracker<'a> {
+    fn clone(&self) -> Self {
+        Self {
+            pos: self.pos,
+            subpos: self.subpos,
+            results: self.results,
+        }
+    }
 }
 
 impl<'a> PosTracker<'a> {
@@ -60,7 +71,6 @@ impl<'a> PosTracker<'a> {
         let index = *self.pos.get();
         let result = &self.results[index];
         let subpos = *self.subpos.get();
-        println!("modify subpos? {} {}", subpos, result.actions.len());
         if subpos > 0 && subpos < result.actions.len() - 1 {
             self.subpos.modify(|v| v + 1);
             return;

@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fmt::Display;
 use std::fs::{read_to_string, File};
 use std::io::{self, prelude::*, BufReader};
@@ -5,6 +6,7 @@ use std::process::{Command, ExitStatus, Stdio};
 use std::str::FromStr;
 
 mod config;
+mod exec;
 mod gui;
 mod search;
 mod state;
@@ -148,7 +150,10 @@ impl Args {
                 return Err(RMenuError::NoSuchPlugin(plugin.to_owned()));
             };
             // build command
-            let mut cmdargs = args.clone();
+            let mut cmdargs: VecDeque<String> = args
+                .iter()
+                .map(|arg| shellexpand::tilde(arg).to_string())
+                .collect();
             let Some(main) = cmdargs.pop_front() else {
                 return Err(RMenuError::InvalidPlugin(plugin.to_owned()));
             };
@@ -188,6 +193,7 @@ impl Args {
         config.css.extend(args.css.clone());
         let mut css = vec![];
         for path in config.css.iter() {
+            let path = shellexpand::tilde(path).to_string();
             let src = read_to_string(path)?;
             css.push(src);
         }
@@ -211,8 +217,7 @@ impl Args {
 
 //TODO: config
 //  - default and cli accessable modules (instead of piped in)
-//  - allow/disable icons (also available via CLI)
-//  - custom keybindings (some available via CLI?)
+//  - should resolve arguments/paths with home expansion
 
 //TODO: add exit key (Esc by default?) - part of keybindings
 

@@ -1,3 +1,4 @@
+//! RMENU Entry Search Function Implementaton
 use regex::RegexBuilder;
 use rmenu_plugin::Entry;
 
@@ -29,7 +30,7 @@ macro_rules! search {
 }
 
 /// Generate a new dynamic Search Function based on
-/// Configurtaion Settigns and Search-String
+/// Configurtaion Settings and Search-String
 pub fn new_searchfn(cfg: &Config, search: &str) -> Box<dyn Fn(&Entry) -> bool> {
     if cfg.search_regex {
         let regex = RegexBuilder::new(search)
