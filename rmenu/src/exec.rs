@@ -5,6 +5,7 @@ use std::process::Command;
 use rmenu_plugin::Action;
 
 pub fn execute(action: &Action) {
+    log::info!("executing: {} {:?}", action.name, action.exec);
     let args = match shell_words::split(&action.exec) {
         Ok(args) => args,
         Err(err) => panic!("{:?} invalid command {err}", action.exec),

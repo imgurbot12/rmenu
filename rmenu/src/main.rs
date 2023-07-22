@@ -15,6 +15,11 @@ use clap::Parser;
 use rmenu_plugin::Entry;
 use thiserror::Error;
 
+static CONFIG_DIR: &'static str = "~/.config/rmenu/";
+static DEFAULT_CSS: &'static str = "~/.config/rmenu/style.css";
+static DEFAULT_CONFIG: &'static str = "~/.config/rmenu/config.yaml";
+static DEFAULT_CSS_CONTENT: &'static str = include_str!("../public/default.css");
+
 #[derive(Debug, Clone)]
 pub enum Format {
     Json,
@@ -80,7 +85,7 @@ pub struct Args {
     #[arg(short, long)]
     config: Option<String>,
     #[arg(long)]
-    css: Vec<String>,
+    css: Option<String>,
 }
 
 impl Args {
@@ -88,16 +93,7 @@ impl Args {
     fn config(&self) -> Result<config::Config, RMenuError> {
         let path = match &self.config {
             Some(path) => path.to_owned(),
-            None => match dirs::config_dir() {
-                Some(mut dir) => {
-                    dir.push("rmenu");
-                    dir.push("config.yaml");
-                    dir.to_string_lossy().to_string()
-                }
-                None => {
-                    return Err(RMenuError::HomeNotFound);
-                }
-            },
+            None => shellexpand::tilde(DEFAULT_CONFIG).to_string(),
         };
         log::debug!("loading config from {path:?}");
         let cfg = match read_to_string(path) {
@@ -140,7 +136,7 @@ impl Args {
 
     /// Load Entries From Specified Sources
     fn load_sources(&self, cfg: &config::Config) -> Result<Vec<Entry>, RMenuError> {
-        println!("{cfg:?}");
+        log::debug!("config: {cfg:?}");
         // execute commands to get a list of entries
         let mut entries = vec![];
         for plugin in self.run.iter() {
@@ -188,15 +184,17 @@ impl Args {
     /// Load Application
     pub fn parse_app() -> Result<App, RMenuError> {
         let args = Self::parse();
-        let mut config = args.config()?;
+        let config = args.config()?;
         // load css files from settings
-        config.css.extend(args.css.clone());
-        let mut css = vec![];
-        for path in config.css.iter() {
-            let path = shellexpand::tilde(path).to_string();
-            let src = read_to_string(path)?;
-            css.push(src);
-        }
+        let csspath = args.css.clone().unwrap_or_else(|| DEFAULT_CSS.to_owned());
+        let csspath = shellexpand::tilde(&csspath).to_string();
+        let css = match read_to_string(csspath) {
+            Ok(css) => css,
+            Err(err) => {
+                log::error!("failed to load css: {err:?}");
+                DEFAULT_CSS_CONTENT.to_owned()
+            }
+        };
         // load entries from configured sources
         let entries = match args.run.len() > 0 {
             true => args.load_sources(&config)?,
@@ -204,7 +202,7 @@ impl Args {
         };
         // generate app object
         return Ok(App {
-            css: css.join("\n"),
+            css,
             name: "rmenu".to_owned(),
             entries,
             config,
@@ -215,13 +213,16 @@ impl Args {
 //TODO: improve search w/ modes?
 //TODO: improve looks and css
 
-//TODO: config
-//  - default and cli accessable modules (instead of piped in)
-//  - should resolve arguments/paths with home expansion
-
-//TODO: add exit key (Esc by default?) - part of keybindings
-
 fn main() -> Result<(), RMenuError> {
+    // enable log if env-var is present
+    if std::env::var("RUST_LOG").is_ok() {
+        env_logger::init();
+    }
+    // change directory to configuration dir
+    let cfgdir = shellexpand::tilde(CONFIG_DIR).to_string();
+    if let Err(err) = std::env::set_current_dir(&cfgdir) {
+        log::error!("failed to change directory: {err:?}");
+    }
     // parse cli / config / application-settings
     let app = Args::parse_app()?;
     gui::run(app);

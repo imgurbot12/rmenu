@@ -74,14 +74,13 @@ impl<'de> Deserialize<'de> for Keybind {
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
+#[serde(default)]
 pub struct KeyConfig {
     pub exec: Vec<Keybind>,
     pub exit: Vec<Keybind>,
     pub move_up: Vec<Keybind>,
     pub move_down: Vec<Keybind>,
-    #[serde(default)]
     pub open_menu: Vec<Keybind>,
-    #[serde(default)]
     pub close_menu: Vec<Keybind>,
 }
 
@@ -129,23 +128,19 @@ impl Default for WindowConfig {
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
+#[serde(default)]
 pub struct Config {
-    pub css: Vec<String>,
     pub use_icons: bool,
     pub search_regex: bool,
     pub ignore_case: bool,
-    #[serde(default)]
     pub plugins: BTreeMap<String, Vec<String>>,
-    #[serde(default)]
     pub keybinds: KeyConfig,
-    #[serde(default)]
     pub window: WindowConfig,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            css: vec![],
             use_icons: true,
             search_regex: false,
             ignore_case: true,

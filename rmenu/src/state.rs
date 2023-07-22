@@ -28,9 +28,9 @@ impl<'a> PosTracker<'a> {
     }
     /// Move X Primary Results Downwards
     pub fn move_down(&self, x: usize) {
+        let max = std::cmp::max(self.results.len(), 1);
         self.subpos.set(0);
-        self.pos
-            .modify(|v| std::cmp::min(v + x, self.results.len() - 1))
+        self.pos.modify(|v| std::cmp::min(v + x, max - 1))
     }
     /// Get Current Position/SubPosition
     pub fn position(&self) -> (usize, usize) {
@@ -64,11 +64,12 @@ impl<'a> PosTracker<'a> {
     /// Move Down Once With Context of SubMenu
     pub fn shift_down(&self) {
         let index = *self.pos.get();
-        let result = &self.results[index];
-        let subpos = *self.subpos.get();
-        if subpos > 0 && subpos < result.actions.len() - 1 {
-            self.subpos.modify(|v| v + 1);
-            return;
+        if let Some(result) = &self.results.get(index) {
+            let subpos = *self.subpos.get();
+            if subpos > 0 && subpos < result.actions.len() - 1 {
+                self.subpos.modify(|v| v + 1);
+                return;
+            }
         }
         self.move_down(1)
     }

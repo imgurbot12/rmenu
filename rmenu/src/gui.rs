@@ -95,13 +95,8 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
             ondblclick: |_| {
                 let action = match cx.props.entry.actions.get(0) {
                     Some(action) => action,
-                    None => {
-                        let name = &cx.props.entry.name;
-                        log::warn!("no action to execute on {:?}", name);
-                        return;
-                    }
+                    None => panic!("No Action Configured"),
                 };
-                log::info!("executing: {:?}", action.exec);
                 execute(action);
             },
             if cx.props.config.use_icons {
@@ -168,7 +163,7 @@ fn App(cx: Scope<App>) -> Element {
     // retrieve results build and build position-tracker
     let tracker = PosTracker::new(cx, results.clone());
     let (pos, subpos) = tracker.position();
-    log::debug!("pos: {pos}, {subpos}");
+    log::debug!("search: {search:?}, pos: {pos}, {subpos}");
 
     // keyboard events
     let keybinds = &cx.props.config.keybinds;
