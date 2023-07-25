@@ -82,6 +82,8 @@ pub struct Args {
     format: Format,
     #[arg(short, long)]
     run: Vec<String>,
+    #[arg(long)]
+    regex: Option<bool>,
     #[arg(short, long)]
     config: Option<String>,
     #[arg(long)]
@@ -184,7 +186,7 @@ impl Args {
     /// Load Application
     pub fn parse_app() -> Result<App, RMenuError> {
         let args = Self::parse();
-        let config = args.config()?;
+        let mut config = args.config()?;
         // load css files from settings
         let csspath = args.css.clone().unwrap_or_else(|| DEFAULT_CSS.to_owned());
         let csspath = shellexpand::tilde(&csspath).to_string();
@@ -200,6 +202,9 @@ impl Args {
             true => args.load_sources(&config)?,
             false => args.load_default(&config)?,
         };
+        // update configuration based on cli
+        config.use_icons = config.use_icons && entries.iter().any(|e| e.icon.is_some());
+        config.search_regex = args.regex.unwrap_or(config.search_regex);
         // generate app object
         return Ok(App {
             css,
