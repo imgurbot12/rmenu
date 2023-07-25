@@ -13,6 +13,16 @@ pub struct Action {
     pub comment: Option<String>,
 }
 
+impl Action {
+    pub fn new(exec: &str) -> Self {
+        Self {
+            name: "main".to_string(),
+            exec: exec.to_string(),
+            comment: None,
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
     pub name: String,
@@ -22,11 +32,11 @@ pub struct Entry {
 }
 
 impl Entry {
-    pub fn new(name: &str) -> Self {
+    pub fn new(name: &str, action: &str, comment: Option<&str>) -> Self {
         Self {
             name: name.to_owned(),
-            actions: Default::default(),
-            comment: Default::default(),
+            actions: vec![Action::new(action)],
+            comment: comment.map(|c| c.to_owned()),
             icon: Default::default(),
         }
     }

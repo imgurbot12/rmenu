@@ -2,5 +2,8 @@
 resolver = "2"
 members = [
   "rmenu",
-  "rmenu-plugin"
+  "rmenu-plugin",
+  "plugin-run",
+  "plugin-desktop",
+  "rtest",
 ]
