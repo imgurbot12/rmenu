@@ -218,13 +218,14 @@ fn main() -> Result<(), RMenuError> {
     if std::env::var("RUST_LOG").is_ok() {
         env_logger::init();
     }
+    // parse cli / config / application-settings
+    let app = Args::parse_app()?;
     // change directory to configuration dir
     let cfgdir = shellexpand::tilde(CONFIG_DIR).to_string();
     if let Err(err) = std::env::set_current_dir(&cfgdir) {
         log::error!("failed to change directory: {err:?}");
     }
-    // parse cli / config / application-settings
-    let app = Args::parse_app()?;
+    // run gui
     gui::run(app);
     Ok(())
 }

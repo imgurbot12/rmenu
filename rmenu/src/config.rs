@@ -113,8 +113,12 @@ impl Default for WindowConfig {
     fn default() -> Self {
         Self {
             title: "RMenu - App Launcher".to_owned(),
+            // size: LogicalSize {
+            //     width: 700.0,
+            //     height: 400.0,
+            // },
             size: LogicalSize {
-                width: 700.0,
+                width: 1000.0,
                 height: 400.0,
             },
             position: LogicalPosition { x: 100.0, y: 100.0 },
@@ -130,6 +134,8 @@ impl Default for WindowConfig {
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct Config {
+    pub page_size: usize,
+    pub page_load: f64,
     pub use_icons: bool,
     pub search_regex: bool,
     pub ignore_case: bool,
@@ -141,6 +147,8 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            page_size: 50,
+            page_load: 0.8,
             use_icons: true,
             search_regex: false,
             ignore_case: true,
