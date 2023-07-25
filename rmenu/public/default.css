@@ -1,15 +1,35 @@
+
+body {
+  overflow: hidden;
+}
+
 main {
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
-input {
+div.navbar {
+  top: 0;
+  position: fixed;
+  overflow: hidden;
   min-width: 99%;
+}
+
+div.results {
+  height: 100vh;
+  margin-top: 50px;
+  overflow-y: auto;
 }
 
 div.selected {
   background-color: lightblue;
+}
+
+/* Navigation */
+
+input {
+  width: 99%;
 }
 
 /* Result CSS */
