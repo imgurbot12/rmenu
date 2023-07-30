@@ -5,7 +5,6 @@ use std::{fs::read_to_string, path::Path};
 use freedesktop_desktop_entry::DesktopEntry;
 use ini::Ini;
 use rmenu_plugin::{Action, Entry};
-use thiserror::Error;
 use walkdir::WalkDir;
 
 static XDG_DATA_ENV: &'static str = "XDG_DATA_DIRS";
@@ -13,16 +12,6 @@ static XDG_CONFIG_ENV: &'static str = "XDG_CONFIG_HOME";
 static XDG_DATA_DEFAULT: &'static str = "/usr/share:/usr/local/share";
 static XDG_CONFIG_DEFAULT: &'static str = "~/.config";
 static DEFAULT_THEME: &'static str = "hicolor";
-
-#[derive(Error, Debug)]
-enum ProcessError {
-    #[error("Failed to Read Desktop File")]
-    FileError(#[from] std::io::Error),
-    #[error("Invalid Desktop File")]
-    InvalidFile(#[from] freedesktop_desktop_entry::DecodeError),
-    #[error("No Such Attribute")]
-    InvalidAttr(&'static str),
-}
 
 /// Retrieve XDG-CONFIG-HOME Directory
 #[inline]
@@ -137,32 +126,38 @@ fn data_dirs(dir: &str) -> Vec<PathBuf> {
 }
 
 /// Parse XDG Desktop Entry into RMenu Entry
-fn parse_desktop(path: &Path, locale: Option<&str>) -> Result<Entry, ProcessError> {
-    let bytes = read_to_string(path)?;
-    let entry = DesktopEntry::decode(&path, &bytes)?;
-    let name = entry
-        .name(locale)
-        .ok_or(ProcessError::InvalidAttr("Name"))?
-        .to_string();
+fn parse_desktop(path: &Path, locale: Option<&str>) -> Option<Entry> {
+    let bytes = read_to_string(path).ok()?;
+    let entry = DesktopEntry::decode(&path, &bytes).ok()?;
+    let name = entry.name(locale)?.to_string();
     let icon = entry.icon().map(|s| s.to_string());
     let comment = entry.comment(locale).map(|s| s.to_string());
-    let actions: Vec<Action> = entry
-        .actions()
-        .unwrap_or("")
-        .split(";")
-        .into_iter()
-        .filter(|a| a.len() > 0)
-        .filter_map(|a| {
-            let name = entry.action_name(a, locale)?;
-            let exec = entry.action_exec(a)?;
-            Some(Action {
-                name: name.to_string(),
-                exec: exec.to_string(),
-                comment: None,
-            })
-        })
-        .collect();
-    Ok(Entry {
+    let mut actions = match entry.exec() {
+        Some(exec) => vec![Action {
+            name: "main".to_string(),
+            exec: exec.to_string(),
+            comment: None,
+        }],
+        None => vec![],
+    };
+    actions.extend(
+        entry
+            .actions()
+            .unwrap_or("")
+            .split(";")
+            .into_iter()
+            .filter(|a| a.len() > 0)
+            .filter_map(|a| {
+                let name = entry.action_name(a, locale)?;
+                let exec = entry.action_exec(a)?;
+                Some(Action {
+                    name: name.to_string(),
+                    exec: exec.to_string(),
+                    comment: None,
+                })
+            }),
+    );
+    Some(Entry {
         name,
         actions,
         comment,
@@ -178,7 +173,7 @@ fn find_desktops(path: PathBuf, locale: Option<&str>) -> Vec<Entry> {
         .filter_map(|e| e.ok())
         .filter(|e| e.file_name().to_string_lossy().ends_with(".desktop"))
         .filter(|e| e.file_type().is_file())
-        .filter_map(|e| parse_desktop(e.path(), locale).ok())
+        .filter_map(|e| parse_desktop(e.path(), locale))
         .collect()
 }
 
