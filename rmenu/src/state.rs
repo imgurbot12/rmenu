@@ -149,11 +149,12 @@ impl<'a> AppState<'a> {
                     KeyEvent::CloseMenu => self.close_menu(),
                     KeyEvent::ShiftUp => {
                         self.shift_up();
-                        scroll(cx, self.position().0)
+                        let pos = self.position().0;
+                        scroll(cx, if pos <= 3 { pos } else { pos + 3 })
                     }
                     KeyEvent::ShiftDown => {
                         self.shift_down();
-                        scroll(cx, self.position().0)
+                        scroll(cx, self.position().0 + 3)
                     }
                 };
                 self.state.with_mut(|s| s.event = None);
@@ -182,12 +183,13 @@ impl<'a> AppState<'a> {
     }
 
     /// Update Search and Reset Position
-    pub fn set_search(&self, search: String) {
+    pub fn set_search(&self, cx: Scope<'_, App>, search: String) {
         self.state.with_mut(|s| {
             s.pos = 0;
             s.subpos = 0;
             s.search = search;
         });
+        scroll(cx, 0);
     }
 
     /// Manually Set Position/SubPosition (with Click)

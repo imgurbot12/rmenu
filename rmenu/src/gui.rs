@@ -1,5 +1,7 @@
 //! RMENU GUI Implementation using Dioxus
 #![allow(non_snake_case)]
+use std::fs::read_to_string;
+
 use dioxus::prelude::*;
 use keyboard_types::{Code, Modifiers};
 use rmenu_plugin::Entry;
@@ -38,6 +40,24 @@ struct GEntry<'a> {
     index: usize,
     entry: &'a Entry,
     state: AppState<'a>,
+}
+
+#[inline]
+fn render_comment(comment: Option<&String>) -> String {
+    return comment.map(|s| s.as_str()).unwrap_or("").to_string();
+}
+
+#[inline]
+fn render_image<'a, T>(cx: Scope<'a, T>, image: Option<&String>) -> Element<'a> {
+    if let Some(img) = image {
+        if img.ends_with(".svg") {
+            if let Some(content) = crate::image::convert_svg(img.to_owned()) {
+                return cx.render(rsx! { img { class: "image", src: "{content}" } });
+            }
+        }
+        return cx.render(rsx! {  img { class: "image", src: "{img}" } });
+    }
+    None
 }
 
 /// render a single result entry w/ the given information
@@ -81,9 +101,7 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
                     }
                     div {
                         class: "action-comment",
-                        if let Some(comment) = action.comment.as_ref() {
-                            format!("- {comment}")
-                        }
+                        render_comment(action.comment.as_ref())
                     }
                 }
             })
@@ -99,9 +117,7 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
                 cx.render(rsx! {
                     div {
                         class: "icon",
-                        if let Some(icon) = cx.props.entry.icon.as_ref() {
-                            cx.render(rsx! { img { src: "{icon}" } })
-                        }
+                        render_image(cx, cx.props.entry.icon.as_ref())
                     }
                 })
             }
@@ -111,9 +127,7 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
             }
             div {
                 class: "comment",
-                if let Some(comment) = cx.props.entry.comment.as_ref() {
-                    comment.to_string()
-                }
+                render_comment(cx.props.entry.comment.as_ref())
             }
         }
         div {
@@ -201,7 +215,7 @@ fn App<'a>(cx: Scope<App>) -> Element {
                 input {
                     id: "search",
                     value: "{search}",
-                    oninput: move |evt| s_updater.set_search(evt.value.clone()),
+                    oninput: move |evt| s_updater.set_search(cx, evt.value.clone()),
                 }
             }
             div {

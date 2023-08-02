@@ -8,6 +8,7 @@ use std::str::FromStr;
 mod config;
 mod exec;
 mod gui;
+mod image;
 mod search;
 mod state;
 
