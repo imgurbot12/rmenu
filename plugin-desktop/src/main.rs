@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::fs::FileType;
 use std::path::PathBuf;
 use std::{fs::read_to_string, path::Path};
 
@@ -64,18 +65,42 @@ fn calculate_sizes(range: (usize, usize, usize)) -> HashSet<String> {
     sizes
 }
 
+#[inline(always)]
+fn is_valid_icon(name: &str) -> bool {
+    name.ends_with(".png") || name.ends_with(".svg")
+}
+
+/// Parse Icon-Name from Filename
+#[inline]
+fn icon_name(name: &str) -> String {
+    name.rsplit_once(".")
+        .map(|(i, _)| i)
+        .unwrap_or(&name)
+        .to_owned()
+}
+
 /// Parse and Categorize Icons Within the Specified Path
 fn find_icons(path: &PathBuf, sizes: (usize, usize, usize)) -> Vec<IconGroup> {
     let sizes = calculate_sizes(sizes);
+    let mut extras = IconGroup::new();
     let icons: Icons = WalkDir::new(path)
         // collect list of directories of icon subdirs
         .max_depth(1)
+        .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_dir())
         .filter_map(|e| {
-            let name = e.file_name().to_str()?.to_string();
-            Some((name, e.path().to_owned()))
+            let name = e.file_name().to_str()?;
+            let path = e.path().to_owned();
+            match e.file_type().is_dir() {
+                true => Some((name.to_owned(), path)),
+                false => {
+                    if is_valid_icon(name) {
+                        extras.insert(icon_name(name), path);
+                    }
+                    None
+                }
+            }
         })
         // iterate content within subdirs
         .map(|(name, path)| {
@@ -85,10 +110,9 @@ fn find_icons(path: &PathBuf, sizes: (usize, usize, usize)) -> Vec<IconGroup> {
                 .filter_map(|e| e.ok())
                 .filter(|e| e.file_type().is_file())
                 .filter_map(|e| {
-                    let name = e.file_name().to_str()?.to_string();
-                    if name.ends_with(".png") || name.ends_with(".svg") {
-                        let icon = name.rsplit_once(".").map(|(i, _)| i).unwrap_or(&name);
-                        return Some((icon.to_owned(), e.path().to_owned()));
+                    let name = e.file_name().to_str()?;
+                    if is_valid_icon(name) {
+                        return Some((icon_name(name), e.path().to_owned()));
                     }
                     None
                 })
@@ -110,7 +134,25 @@ fn find_icons(path: &PathBuf, sizes: (usize, usize, usize)) -> Vec<IconGroup> {
         })
         .last();
     priority.append(&mut others);
+    priority.push(extras);
     priority
+}
+
+/// Retrieve Extras in Base Icon Directories
+fn find_icon_extras(path: &PathBuf) -> IconGroup {
+    WalkDir::new(path)
+        .max_depth(1)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+        .filter_map(|e| {
+            let name = e.file_name().to_str()?;
+            if is_valid_icon(name) {
+                return Some((icon_name(&name), e.path().to_owned()));
+            }
+            None
+        })
+        .collect()
 }
 
 /// Retrieve XDG-DATA Directories
@@ -197,16 +239,19 @@ fn main() {
     // build a collection of icons for configured themes
     let cfgdir = config_dir();
     let themes = find_theme(&cfgdir);
-    let icons: Vec<IconGroup> = data_dirs("icons")
+    let icon_paths = data_dirs("icons");
+    let mut icons: Vec<IconGroup> = icon_paths
         // generate list of icon-paths that exist
         .iter()
         .map(|d| themes.iter().map(|t| d.join(t)))
         .flatten()
         .filter(|t| t.exists())
+        // append icon-paths within supported themes
         .map(|t| find_icons(&t, sizes))
         .flatten()
         .collect();
-
+    // add extra icons found in base folders
+    icons.extend(icon_paths.iter().map(|p| find_icon_extras(p)));
     // retrieve desktop applications and assign icons before printing results
     data_dirs("applications")
         .into_iter()
