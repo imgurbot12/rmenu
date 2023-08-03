@@ -18,18 +18,23 @@ enum SvgError {
     PngError(#[from] png::EncodingError),
 }
 
-fn svg_to_png(path: &str) -> Result<String, SvgError> {
+fn svg_to_png(path: &str, pixels: u32) -> Result<String, SvgError> {
     // read and convert to resvg document tree
     let xml = read_to_string(path)?;
     let opt = resvg::usvg::Options::default();
     let tree = resvg::usvg::Tree::from_str(&xml, &opt)?;
     let rtree = resvg::Tree::from_usvg(&tree);
-    // generate pixel-buffer
+    // generate pixel-buffer and scale according to size preference
     let size = rtree.size.to_int_size();
-    let mut pixmap = resvg::tiny_skia::Pixmap::new(size.width(), size.height())
-        .ok_or_else(|| SvgError::NoPixBuf)?;
+    let scale = pixels / size.width();
+    let width = size.width() * scale;
+    let height = size.height() * scale;
+    let fscale = scale as f32;
+    let mut pixmap =
+        resvg::tiny_skia::Pixmap::new(width, height).ok_or_else(|| SvgError::NoPixBuf)?;
+    let form = resvg::tiny_skia::Transform::from_scale(fscale, fscale);
     // render as png to memory
-    rtree.render(resvg::tiny_skia::Transform::default(), &mut pixmap.as_mut());
+    rtree.render(form, &mut pixmap.as_mut());
     let mut png = pixmap.encode_png()?;
     // base64 encode png
     let encoded = general_purpose::STANDARD.encode(&mut png);
@@ -38,5 +43,5 @@ fn svg_to_png(path: &str) -> Result<String, SvgError> {
 
 #[cached]
 pub fn convert_svg(path: String) -> Option<String> {
-    svg_to_png(&path).ok()
+    svg_to_png(&path, 64).ok()
 }
