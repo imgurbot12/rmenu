@@ -119,16 +119,16 @@ impl<'a> AppState<'a> {
     /// Execute the Current Action
     pub fn execute(&self) {
         let (pos, subpos) = self.position();
-        println!("double click {pos} {subpos}");
+        log::debug!("execute {pos} {subpos}");
         let Some(result) = self.results.get(pos) else {
             return;
         };
-        println!("result: {result:?}");
+        log::debug!("result: {result:?}");
         let Some(action) = result.actions.get(subpos) else {
             return;
         };
-        println!("action: {action:?}");
-        execute(action);
+        log::debug!("action: {action:?}");
+        execute(action, self.app.config.terminal.clone());
     }
 
     /// Set Current Key/Action for Later Evaluation

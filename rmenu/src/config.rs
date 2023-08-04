@@ -142,6 +142,7 @@ pub struct Config {
     pub plugins: BTreeMap<String, Vec<String>>,
     pub keybinds: KeyConfig,
     pub window: WindowConfig,
+    pub terminal: Option<String>,
 }
 
 impl Default for Config {
@@ -155,6 +156,7 @@ impl Default for Config {
             plugins: Default::default(),
             keybinds: Default::default(),
             window: Default::default(),
+            terminal: Default::default(),
         }
     }
 }

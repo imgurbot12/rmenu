@@ -1,15 +1,25 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Method {
-    Terminal,
-    Desktop,
+    Terminal(String),
+    Run(String),
+}
+
+impl Method {
+    pub fn new(exec: String, terminal: bool) -> Self {
+        match terminal {
+            true => Self::Terminal(exec),
+            false => Self::Run(exec),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Action {
     pub name: String,
-    pub exec: String,
+    pub exec: Method,
     pub comment: Option<String>,
 }
 
@@ -17,7 +27,7 @@ impl Action {
     pub fn new(exec: &str) -> Self {
         Self {
             name: "main".to_string(),
-            exec: exec.to_string(),
+            exec: Method::Run(exec.to_string()),
             comment: None,
         }
     }

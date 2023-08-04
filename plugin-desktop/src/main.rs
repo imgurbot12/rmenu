@@ -1,11 +1,11 @@
 use std::collections::{HashMap, HashSet};
-use std::fs::FileType;
 use std::path::PathBuf;
 use std::{fs::read_to_string, path::Path};
 
 use freedesktop_desktop_entry::DesktopEntry;
 use ini::Ini;
-use rmenu_plugin::{Action, Entry};
+use regex::Regex;
+use rmenu_plugin::{Action, Entry, Method};
 use walkdir::WalkDir;
 
 static XDG_DATA_ENV: &'static str = "XDG_DATA_DIRS";
@@ -167,17 +167,23 @@ fn data_dirs(dir: &str) -> Vec<PathBuf> {
         .collect()
 }
 
+#[inline(always)]
+fn fix_exec(exec: &str, ematch: &Regex) -> String {
+    ematch.replace_all(exec, "").trim().to_string()
+}
+
 /// Parse XDG Desktop Entry into RMenu Entry
-fn parse_desktop(path: &Path, locale: Option<&str>) -> Option<Entry> {
+fn parse_desktop(path: &Path, locale: Option<&str>, ematch: &Regex) -> Option<Entry> {
     let bytes = read_to_string(path).ok()?;
     let entry = DesktopEntry::decode(&path, &bytes).ok()?;
     let name = entry.name(locale)?.to_string();
     let icon = entry.icon().map(|s| s.to_string());
     let comment = entry.comment(locale).map(|s| s.to_string());
+    let terminal = entry.terminal();
     let mut actions = match entry.exec() {
         Some(exec) => vec![Action {
             name: "main".to_string(),
-            exec: exec.to_string(),
+            exec: Method::new(fix_exec(exec, ematch), terminal),
             comment: None,
         }],
         None => vec![],
@@ -194,7 +200,7 @@ fn parse_desktop(path: &Path, locale: Option<&str>) -> Option<Entry> {
                 let exec = entry.action_exec(a)?;
                 Some(Action {
                     name: name.to_string(),
-                    exec: exec.to_string(),
+                    exec: Method::new(fix_exec(exec, ematch), terminal),
                     comment: None,
                 })
             }),
@@ -208,14 +214,14 @@ fn parse_desktop(path: &Path, locale: Option<&str>) -> Option<Entry> {
 }
 
 /// Iterate Path and Parse All `.desktop` files into Entries
-fn find_desktops(path: PathBuf, locale: Option<&str>) -> Vec<Entry> {
+fn find_desktops(path: PathBuf, locale: Option<&str>, ematch: &Regex) -> Vec<Entry> {
     WalkDir::new(path)
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
         .filter(|e| e.file_name().to_string_lossy().ends_with(".desktop"))
         .filter(|e| e.file_type().is_file())
-        .filter_map(|e| parse_desktop(e.path(), locale))
+        .filter_map(|e| parse_desktop(e.path(), locale, ematch))
         .collect()
 }
 
@@ -236,6 +242,8 @@ fn assign_icons(icons: &Vec<IconGroup>, mut e: Entry) -> Entry {
 fn main() {
     let locale = Some("en");
     let sizes = (32, 64, 128);
+    // build regex desktop formatter args
+    let ematch = regex::Regex::new(r"%\w").expect("Failed Regex Compile");
     // build a collection of icons for configured themes
     let cfgdir = config_dir();
     let themes = find_theme(&cfgdir);
@@ -252,11 +260,16 @@ fn main() {
         .collect();
     // add extra icons found in base folders
     icons.extend(icon_paths.iter().map(|p| find_icon_extras(p)));
-    // retrieve desktop applications and assign icons before printing results
-    data_dirs("applications")
+    // retrieve desktop applications and sort alphabetically
+    let mut applications: Vec<Entry> = data_dirs("applications")
         .into_iter()
-        .map(|p| find_desktops(p, locale))
+        .map(|p| find_desktops(p, locale, &ematch))
         .flatten()
+        .collect();
+    applications.sort_by_cached_key(|e| e.name.to_owned());
+    // assign icons and print results
+    applications
+        .into_iter()
         .map(|e| assign_icons(&icons, e))
         .filter_map(|e| serde_json::to_string(&e).ok())
         .map(|s| println!("{}", s))
