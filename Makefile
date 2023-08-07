@@ -4,11 +4,13 @@ CARGO=cargo
 FLAGS=--release
 
 DEST=$(HOME)/.config/rmenu
+INSTALL=$(CARGO_PATH)/bin
 
 install: build deploy
 
 deploy:
 	mkdir -p ${DEST}
+	cp -vf ./target/release/rmenu ${INSTALL}/rmenu
 	cp -vf ./target/release/desktop ${DEST}/drun
 	cp -vf ./target/release/run ${DEST}/run
 	cp -vf ./rmenu/public/config.yaml ${DEST}/config.yaml
