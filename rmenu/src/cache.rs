@@ -80,7 +80,6 @@ pub fn write_cache(name: &str, cfg: &PluginConfig, entries: &Vec<Entry>) -> Resu
         CacheSetting::NoCache => {}
         _ => {
             let path = cache_file(name);
-            println!("write! {:?}", path);
             let data = bincode::serialize(entries)?;
             let mut f = fs::File::create(path)?;
             f.write_all(&data)?;

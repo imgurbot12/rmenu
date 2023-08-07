@@ -41,7 +41,7 @@ fn parse_args(exec: &str) -> Vec<String> {
 }
 
 pub fn execute(action: &Action, term: Option<String>) {
-    log::info!("executing: {} {:?}", action.name, action.exec);
+    log::info!("executing: {:?} {:?}", action.name, action.exec);
     let args = match &action.exec {
         Method::Run(exec) => parse_args(&exec),
         Method::Terminal(exec) => {

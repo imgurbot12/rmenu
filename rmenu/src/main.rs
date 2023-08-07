@@ -128,6 +128,7 @@ impl Args {
             "-" => "/dev/stdin",
             _ => &self.input,
         };
+        log::info!("reading from {fpath:?}");
         let file = File::open(fpath).map_err(|e| RMenuError::FileError(e))?;
         let reader = BufReader::new(file);
         let mut entries = vec![];
@@ -236,10 +237,11 @@ impl Args {
 //TODO: improve looks and css
 
 fn main() -> Result<(), RMenuError> {
-    // enable log if env-var is present
-    if std::env::var("RUST_LOG").is_ok() {
-        env_logger::init();
+    // enable log and set default level
+    if std::env::var("RUST_LOG").is_err() {
+        std::env::set_var("RUST_LOG", "info");
     }
+    env_logger::init();
     // parse cli / config / application-settings
     let app = Args::parse_app()?;
     // change directory to configuration dir
