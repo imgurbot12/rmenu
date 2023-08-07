@@ -1,7 +1,23 @@
+# global search settings
 use_icons:    true
 ignore_case:  true
 search_regex: false
 
+# window settings
+window:
+  title: "Rmenu - Application Launcher"
+  size:
+    width:  500
+    height: 500
+  position:
+    x: 300
+    y: 500
+  focus:       true
+  decorate:    false
+  transparent: false
+  always_top:  true
+
+# configured plugin settings
 plugins:
   run:  
     exec:  ["~/.config/rmenu/run"]
@@ -10,6 +26,7 @@ plugins:
     exec:  ["~/.config/rmenu/drun"]
     cache: onlogin
 
+# custom keybindings
 keybinds:
   exec:       ["Enter"]
   exit:       ["Escape"]
