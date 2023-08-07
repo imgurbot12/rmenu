@@ -131,7 +131,7 @@ impl<'a> ThemeSpec<'a> {
 
 /// Sort Theme Directories by Priority, Append Root, and Collect Names Only
 #[inline]
-fn sort_dirs(base: &PathBuf, dirs: &mut Vec<PathPriority>) -> Vec<PathBuf> {
+fn sort_dirs(dirs: &mut Vec<PathPriority>) -> Vec<PathBuf> {
     dirs.sort_by_key(|p| p.priority);
     dirs.push(PathPriority::new("".into(), 0));
     dirs.into_iter().map(|p| p.path.to_owned()).collect()
@@ -180,7 +180,7 @@ fn parse_index(spec: &ThemeSpec) -> Result<ThemeInfo, ThemeError> {
     Ok(ThemeInfo {
         priority: index,
         name: name.to_owned(),
-        paths: sort_dirs(spec.root, &mut directories),
+        paths: sort_dirs(&mut directories),
     })
 }
 
@@ -218,7 +218,7 @@ fn guess_index(spec: &ThemeSpec) -> Result<ThemeInfo, ThemeError> {
     Ok(ThemeInfo {
         name,
         priority: index,
-        paths: sort_dirs(spec.root, &mut directories),
+        paths: sort_dirs(&mut directories),
     })
 }
 
@@ -239,7 +239,7 @@ impl IconSpec {
     }
 
     pub fn standard(cfg: &PathBuf, sizes: Vec<usize>) -> Self {
-        let mut icon_paths = crate::data_dirs("icons");
+        let icon_paths = crate::data_dirs("icons");
         let themes = active_themes(cfg, &icon_paths);
         Self::new(icon_paths, themes, sizes)
     }

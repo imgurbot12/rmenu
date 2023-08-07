@@ -2,7 +2,6 @@ use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use freedesktop_desktop_entry::{DesktopEntry, Iter};
-use freedesktop_icons::lookup;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use rmenu_plugin::{Action, Entry, Method};
@@ -34,24 +33,6 @@ fn data_dirs(dir: &str) -> Vec<PathBuf> {
         .map(|p| p.join(dir.to_owned()))
         .filter(|p| p.exists())
         .collect()
-}
-
-/// Find Freedesktop Default Theme
-fn default_theme() -> String {
-    data_dirs("icons")
-        .into_iter()
-        .map(|p| p.join("default/index.theme"))
-        .filter(|p| p.exists())
-        .find_map(|p| {
-            let content = read_to_string(&p).ok()?;
-            let config = DesktopEntry::decode(&p, &content).ok()?;
-            config
-                .groups
-                .get("Icon Theme")
-                .and_then(|g| g.get("Name"))
-                .map(|key| key.0.to_owned())
-        })
-        .unwrap_or_else(|| "Hicolor".to_string())
 }
 
 /// Modify Exec Statements to Remove %u/%f/etc...

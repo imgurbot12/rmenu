@@ -5,5 +5,5 @@ members = [
   "rmenu-plugin",
   "plugin-run",
   "plugin-desktop",
-  "rtest",
+  "plugin-desktop2",
 ]
