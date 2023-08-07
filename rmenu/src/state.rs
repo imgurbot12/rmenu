@@ -201,13 +201,13 @@ impl<'a> AppState<'a> {
     }
 
     /// Automatically Increase PageCount When Nearing Bottom
-    pub fn scroll_down(&self) {
-        self.state.with_mut(|s| {
-            if self.app.config.page_size * s.page < self.app.entries.len() {
-                s.page += 1;
-            }
-        });
-    }
+    // pub fn scroll_down(&self) {
+    //     self.state.with_mut(|s| {
+    //         if self.app.config.page_size * s.page < self.app.entries.len() {
+    //             s.page += 1;
+    //         }
+    //     });
+    // }
 
     /// Move Position To SubMenu if it Exists
     pub fn open_menu(&self) {

@@ -5,6 +5,7 @@ use std::io::{self, prelude::*, BufReader};
 use std::process::{Command, ExitStatus, Stdio};
 use std::str::FromStr;
 
+mod cache;
 mod config;
 mod exec;
 mod gui;
@@ -142,20 +143,30 @@ impl Args {
         log::debug!("config: {cfg:?}");
         // execute commands to get a list of entries
         let mut entries = vec![];
-        for plugin in self.run.iter() {
-            log::debug!("running plugin: {plugin}");
+        for name in self.run.iter() {
+            log::debug!("running plugin: {name}");
             // retrieve plugin command arguments
-            let Some(args) = cfg.plugins.get(plugin) else {
-                return Err(RMenuError::NoSuchPlugin(plugin.to_owned()));
-            };
+            let plugin = cfg
+                .plugins
+                .get(name)
+                .ok_or_else(|| RMenuError::NoSuchPlugin(name.to_owned()))?;
+            // attempt to read cache rather than run command
+            match cache::read_cache(name, plugin) {
+                Ok(cached) => {
+                    entries.extend(cached);
+                    continue;
+                }
+                Err(err) => log::error!("cache read error: {err:?}"),
+            }
             // build command
-            let mut cmdargs: VecDeque<String> = args
+            let mut cmdargs: VecDeque<String> = plugin
+                .exec
                 .iter()
                 .map(|arg| shellexpand::tilde(arg).to_string())
                 .collect();
-            let Some(main) = cmdargs.pop_front() else {
-                return Err(RMenuError::InvalidPlugin(plugin.to_owned()));
-            };
+            let main = cmdargs
+                .pop_front()
+                .ok_or_else(|| RMenuError::InvalidPlugin(name.to_owned()))?;
             let mut cmd = Command::new(main);
             for arg in cmdargs.iter() {
                 cmd.arg(arg);
@@ -165,7 +176,7 @@ impl Args {
             let stdout = proc
                 .stdout
                 .as_mut()
-                .ok_or_else(|| RMenuError::CommandError(args.clone().into(), None))?;
+                .ok_or_else(|| RMenuError::CommandError(plugin.exec.clone().into(), None))?;
             let reader = BufReader::new(stdout);
             // read output line by line and parse content
             for line in reader.lines() {
@@ -176,10 +187,15 @@ impl Args {
             let status = proc.wait()?;
             if !status.success() {
                 return Err(RMenuError::CommandError(
-                    args.clone().into(),
+                    plugin.exec.clone().into(),
                     Some(status.clone()),
                 ));
             }
+            // write cache for entries collected
+            match cache::write_cache(name, plugin, &entries) {
+                Ok(_) => {}
+                Err(err) => log::error!("cache write error: {err:?}"),
+            };
         }
         Ok(entries)
     }

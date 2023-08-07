@@ -1,7 +1,5 @@
 //! RMENU GUI Implementation using Dioxus
 #![allow(non_snake_case)]
-use std::fs::read_to_string;
-
 use dioxus::prelude::*;
 use keyboard_types::{Code, Modifiers};
 use rmenu_plugin::Entry;

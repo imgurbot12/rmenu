@@ -1,0 +1,19 @@
+use_icons:    true
+ignore_case:  true
+search_regex: false
+
+plugins:
+  run:  
+    exec:  ["~/.config/rmenu/run"]
+    cache: 300
+  drun: 
+    exec:  ["~/.config/rmenu/drun"]
+    cache: onlogin
+
+keybinds:
+  exec:       ["Enter"]
+  exit:       ["Escape"]
+  move_up:    ["Arrow-Up", "Shift+Tab"]
+  move_down:  ["Arrow-Down", "Tab"]
+  open_menu:  ["Arrow-Right"]
+  close_menu: ["Arrow-Left"]

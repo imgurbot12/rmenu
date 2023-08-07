@@ -18,6 +18,7 @@ fn mod_from_str(s: &str) -> Option<Modifiers> {
     }
 }
 
+/// Single GUI Keybind for Configuration
 #[derive(Debug, PartialEq)]
 pub struct Keybind {
     pub mods: Modifiers,
@@ -73,6 +74,7 @@ impl<'de> Deserialize<'de> for Keybind {
     }
 }
 
+/// Global GUI Keybind Settings Options
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct KeyConfig {
@@ -97,6 +99,7 @@ impl Default for KeyConfig {
     }
 }
 
+/// GUI Desktop Window Configuration Settings
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct WindowConfig {
     pub title: String,
@@ -131,6 +134,57 @@ impl Default for WindowConfig {
     }
 }
 
+/// Cache Settings for Configured RMenu Plugins
+#[derive(Debug, PartialEq)]
+pub enum CacheSetting {
+    NoCache,
+    Never,
+    OnLogin,
+    AfterSeconds(usize),
+}
+
+impl FromStr for CacheSetting {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "never" => Ok(Self::Never),
+            "false" | "disable" | "disabled" => Ok(Self::NoCache),
+            "true" | "login" | "onlogin" => Ok(Self::OnLogin),
+            _ => {
+                let secs: usize = s
+                    .parse()
+                    .map_err(|_| format!("Invalid Cache Setting: {s:?}"))?;
+                Ok(Self::AfterSeconds(secs))
+            }
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for CacheSetting {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s: &str = Deserialize::deserialize(deserializer)?;
+        CacheSetting::from_str(s).map_err(D::Error::custom)
+    }
+}
+
+impl Default for CacheSetting {
+    fn default() -> Self {
+        Self::NoCache
+    }
+}
+
+/// RMenu Data-Source Plugin Configuration
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct PluginConfig {
+    pub exec: Vec<String>,
+    #[serde(default)]
+    pub cache: CacheSetting,
+}
+
+/// Global RMenu Complete Configuration
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -139,7 +193,7 @@ pub struct Config {
     pub use_icons: bool,
     pub search_regex: bool,
     pub ignore_case: bool,
-    pub plugins: BTreeMap<String, Vec<String>>,
+    pub plugins: BTreeMap<String, PluginConfig>,
     pub keybinds: KeyConfig,
     pub window: WindowConfig,
     pub terminal: Option<String>,
