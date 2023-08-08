@@ -221,6 +221,7 @@ fn App<'a>(cx: Scope<App>) -> Element {
                 }
             }
             div {
+                id: "results",
                 class: "results",
                 rendered_results.into_iter()
             }

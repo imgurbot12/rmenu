@@ -30,6 +30,10 @@ main {
 
 input {
   width: 99%;
+  height: 5vw;
+  outline: none;
+  border: none;
+	font-size: large;
 }
 
 /* Result CSS */
