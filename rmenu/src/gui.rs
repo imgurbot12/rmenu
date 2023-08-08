@@ -106,32 +106,35 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
         });
     cx.render(rsx! {
         div {
-            id: "result-{cx.props.index}",
-            class: "result {result_classes} {multi_classes}",
-            // onmouseenter: |_| cx.props.state.set_position(cx.props.index, 0),
-            onclick: |_| cx.props.state.set_position(cx.props.index, 0),
-            ondblclick: |_| cx.props.state.set_event(KeyEvent::Exec),
-            if cx.props.state.config().use_icons {
-                cx.render(rsx! {
-                    div {
-                        class: "icon",
-                        render_image(cx, cx.props.entry.icon.as_ref())
-                    }
-                })
+            class: "result-entry",
+            div {
+                id: "result-{cx.props.index}",
+                class: "result {result_classes} {multi_classes}",
+                // onmouseenter: |_| cx.props.state.set_position(cx.props.index, 0),
+                onclick: |_| cx.props.state.set_position(cx.props.index, 0),
+                ondblclick: |_| cx.props.state.set_event(KeyEvent::Exec),
+                if cx.props.state.config().use_icons {
+                    cx.render(rsx! {
+                        div {
+                            class: "icon",
+                            render_image(cx, cx.props.entry.icon.as_ref())
+                        }
+                    })
+                }
+                div {
+                    class: "name",
+                    "{cx.props.entry.name}"
+                }
+                div {
+                    class: "comment",
+                    render_comment(cx.props.entry.comment.as_ref())
+                }
             }
             div {
-                class: "name",
-                "{cx.props.entry.name}"
+                id: "result-{cx.props.index}-actions",
+                class: "actions {action_classes}",
+                actions.into_iter()
             }
-            div {
-                class: "comment",
-                render_comment(cx.props.entry.comment.as_ref())
-            }
-        }
-        div {
-            id: "result-{cx.props.index}-actions",
-            class: "actions {action_classes}",
-            actions.into_iter()
         }
     })
 }
