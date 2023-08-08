@@ -1,0 +1,25 @@
+* {
+	font-family: monospace;
+	color: white;
+}
+
+html {
+	background-color: #383C4A;
+}
+
+#search {
+	border: none;
+	border-radius: 0px;
+	border-bottom: 3px solid black;
+	background-color: #383C4A;
+	margin-bottom: 5px;
+	padding-bottom: 0px;
+}
+
+.result-entry:nth-child(odd){
+	background-color: #404552;
+}
+
+.selected {
+  background-color: #5291e2; 
+}
