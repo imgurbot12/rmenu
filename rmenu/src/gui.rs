@@ -6,7 +6,7 @@ use rmenu_plugin::Entry;
 
 use crate::config::Keybind;
 use crate::state::{AppState, KeyEvent};
-use crate::App;
+use crate::{App, DEFAULT_CSS_CONTENT};
 
 /// spawn and run the app on the configured platform
 pub fn run(app: App) {
@@ -207,6 +207,7 @@ fn App<'a>(cx: Scope<App>) -> Element {
     });
 
     cx.render(rsx! {
+        style { DEFAULT_CSS_CONTENT }
         style { "{cx.props.css}" }
         div {
             // onclick: |_| focus(cx),

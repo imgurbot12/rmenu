@@ -212,7 +212,7 @@ impl Args {
             Ok(css) => css,
             Err(err) => {
                 log::error!("failed to load css: {err:?}");
-                DEFAULT_CSS_CONTENT.to_owned()
+                "".to_owned()
             }
         };
         // load entries from configured sources

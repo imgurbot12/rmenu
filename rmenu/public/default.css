@@ -9,20 +9,20 @@ main {
   justify-content: center;
 }
 
-div.navbar {
+.navbar {
   top: 0;
   position: fixed;
   overflow: hidden;
   min-width: 99%;
 }
 
-div.results {
+.results {
   height: 100vh;
   margin-top: 50px;
   overflow-y: auto;
 }
 
-div.selected {
+.selected {
   background-color: lightblue;
 }
 
@@ -34,49 +34,49 @@ input {
 
 /* Result CSS */
 
-div.result, div.action {
+.result, .action {
   display: flex;
   align-items: center;
   justify-content: left;
 }
 
-div.result > div, div.action > div {
+.result > div, .action > div {
   margin: 2px 5px;
 }
 
-div.result > div.icon {
+.result > .icon {
   width: 4%;
   overflow: hidden;
   display: flex;
   justify-content: center;
 }
 
-div.result > div.icon > img {
+.result > .icon > img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-div.result > div.name {
+.result > .name {
   width: 30%;
 }
 
-div.result > div.comment {
+.result > .comment {
   flex: 1;
 }
 
 /* Action CSS */
 
-div.actions {
+.actions {
   display: none;
   padding-left: 5%;
 }
 
-div.action-name {
+.action-name {
   width: 50%;
 }
 
-div.actions.active {
+.actions.active {
   display: flex;
   flex-direction: column;
   justify-content: center;
