@@ -7,8 +7,8 @@ search_regex: false
 window:
   title: "Rmenu - Application Launcher"
   size:
-    width:  500
-    height: 500
+    width:  800
+    height: 400
   position:
     x: 300
     y: 500
