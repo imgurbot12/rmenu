@@ -153,6 +153,9 @@ fn matches(bind: &Vec<Keybind>, mods: &Modifiers, key: &Code) -> bool {
 fn App<'a>(cx: Scope<App>) -> Element {
     let mut state = AppState::new(cx, cx.props);
 
+    // always ensure focus
+    focus(cx);
+
     // log current position
     let search = state.search();
     let (pos, subpos) = state.position();
@@ -206,7 +209,7 @@ fn App<'a>(cx: Scope<App>) -> Element {
     cx.render(rsx! {
         style { "{cx.props.css}" }
         div {
-            onclick: |_| focus(cx),
+            // onclick: |_| focus(cx),
             onkeydown: keyboard_controls,
             div {
                 class: "navbar",
