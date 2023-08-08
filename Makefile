@@ -5,6 +5,13 @@ FLAGS=--release
 
 DEST=$(HOME)/.config/rmenu
 INSTALL=$(CARGO_PATH)/bin
+SWAY_CONF=/etc/sway/config.d
+
+all: install sway
+
+sway:
+	echo "Installing Configuration for Sway"
+	sudo cp -vf ./rmenu/public/99-rmenu-sway.conf ${SWAY_CONF}/.
 
 install: build deploy
 
