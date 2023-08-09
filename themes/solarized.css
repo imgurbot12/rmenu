@@ -1,0 +1,27 @@
+* {
+	color: #839496;
+	font-family: monospace;
+	margin: 0px;
+}
+
+html, body {
+	margin: 0px;
+	border: 1px solid #928374;
+	background-color: #002b36;
+}
+
+.navbar {
+	margin: 2px;
+}
+
+#search {
+	border: none;
+	color: #839496;
+	background-color: #073642;
+	padding: 5px;
+	width: -webkit-fill-available;
+}
+
+.selected {
+	background-color: #073642;
+}

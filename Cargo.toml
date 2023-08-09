@@ -1,0 +1,8 @@
+[workspace]
+resolver = "2"
+members = [
+  "rmenu",
+  "rmenu-plugin",
+  "plugin-run",
+  "plugin-desktop",
+]

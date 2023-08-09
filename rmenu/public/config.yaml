@@ -1,0 +1,36 @@
+# global search settings
+use_icons:    true
+ignore_case:  true
+search_regex: false
+
+# window settings
+window:
+  title: "Rmenu - Application Launcher"
+  size:
+    width:  800
+    height: 400
+  position:
+    x: 300
+    y: 500
+  focus:       true
+  decorate:    false
+  transparent: false
+  always_top:  true
+
+# configured plugin settings
+plugins:
+  run:  
+    exec:  ["~/.config/rmenu/run"]
+    cache: 300
+  drun: 
+    exec:  ["~/.config/rmenu/drun"]
+    cache: onlogin
+
+# custom keybindings
+keybinds:
+  exec:       ["Enter"]
+  exit:       ["Escape"]
+  move_up:    ["Arrow-Up", "Shift+Tab"]
+  move_down:  ["Arrow-Down", "Tab"]
+  open_menu:  ["Arrow-Right"]
+  close_menu: ["Arrow-Left"]

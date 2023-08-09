@@ -1,0 +1,22 @@
+* {
+	font-family: "Hack", monospace;
+	color: white;
+}
+
+html {
+	background-color: #3B4252;
+}
+
+#search {
+	border: none;
+	border-radius: 0px;
+	background-color: #3B4252;
+}
+
+.result-entry:nth-child(odd){
+	background-color: #404552;
+}
+
+.selected {
+  background-color: #4C566A; 
+}

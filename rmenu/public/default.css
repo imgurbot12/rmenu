@@ -1,0 +1,88 @@
+
+body {
+  overflow: hidden;
+}
+
+body > div {
+  height: -webkit-fill-available;
+  overflow: hidden;
+}
+
+.navbar {
+  top: 0;
+  left: 0;
+  position: fixed;
+  overflow: hidden;
+  width: -webkit-fill-available;
+}
+
+.results {
+  height: 100vh;
+  margin-top: 50px;
+  overflow-y: auto;
+}
+
+.selected {
+  background-color: lightblue;
+}
+
+/* Navigation */
+
+input {
+  width: 100%;
+  height: 5vw;
+  border: none;
+  outline: none;
+	padding: 5px;
+	font-size: large;
+}
+
+/* Result CSS */
+
+.result, .action {
+  display: flex;
+  align-items: center;
+  justify-content: left;
+}
+
+.result > div, .action > div {
+  margin: 2px 5px;
+}
+
+.result > .icon {
+  width: 4%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.result > .icon > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.result > .name {
+  width: 30%;
+}
+
+.result > .comment {
+  flex: 1;
+}
+
+/* Action CSS */
+
+.actions {
+  display: none;
+  padding-left: 5%;
+}
+
+.action-name {
+  width: 50%;
+}
+
+.actions.active {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
