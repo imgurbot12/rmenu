@@ -31,8 +31,9 @@ body > div {
 input {
   width: 100%;
   height: 5vw;
-  outline: none;
   border: none;
+  outline: none;
+	padding: 5px;
 	font-size: large;
 }
 

@@ -21,7 +21,6 @@ deploy:
 	cp -vf ./target/release/desktop ${DEST}/drun
 	cp -vf ./target/release/run ${DEST}/run
 	cp -vf ./rmenu/public/config.yaml ${DEST}/config.yaml
-	cp -vf ./rmenu/public/default.css ${DEST}/style.css
 
 build: build-rmenu build-plugins
 
