@@ -9,11 +9,17 @@ html {
 
 #search {
 	border: none;
-	border-radius: 0px;
-	border-bottom: 3px solid black;
 	background-color: #383C4A;
 	margin-bottom: 5px;
 	padding-bottom: 0px;
+}
+
+.navbar:after {
+	content: "";
+	display: block;
+	margin: 0 auto;
+	border-bottom: 1px solid black;
+	width: 99%;
 }
 
 .result-entry:nth-child(odd){
