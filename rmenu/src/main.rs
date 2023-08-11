@@ -25,7 +25,7 @@ static DEFAULT_CSS_CONTENT: &'static str = include_str!("../public/default.css")
 #[derive(Debug, Clone)]
 pub enum Format {
     Json,
-    MsgPack,
+    DMenu,
 }
 
 impl Display for Format {
@@ -40,7 +40,7 @@ impl FromStr for Format {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_ascii_lowercase().as_str() {
             "json" => Ok(Format::Json),
-            "msgpack" => Ok(Format::MsgPack),
+            "dmenu" => Ok(Format::DMenu),
             _ => Err("No Such Format".to_owned()),
         }
     }
@@ -90,6 +90,8 @@ pub struct Args {
     config: Option<String>,
     #[arg(long)]
     css: Option<String>,
+    #[arg(short, long)]
+    placehold: Option<String>,
 }
 
 impl Args {
@@ -114,7 +116,7 @@ impl Args {
     fn readentry(&self, cfg: &config::Config, line: &str) -> Result<Entry, RMenuError> {
         let mut entry = match self.format {
             Format::Json => serde_json::from_str::<Entry>(line)?,
-            Format::MsgPack => todo!(),
+            Format::DMenu => Entry::echo(line.trim(), None),
         };
         if !cfg.use_icons {
             entry.icon = None;
@@ -140,7 +142,7 @@ impl Args {
     }
 
     /// Load Entries From Specified Sources
-    fn load_sources(&self, cfg: &config::Config) -> Result<Vec<Entry>, RMenuError> {
+    fn load_sources(&self, cfg: &mut config::Config) -> Result<Vec<Entry>, RMenuError> {
         log::debug!("config: {cfg:?}");
         // execute commands to get a list of entries
         let mut entries = vec![];
@@ -192,6 +194,10 @@ impl Args {
                     Some(status.clone()),
                 ));
             }
+            // update placeholder if empty
+            if cfg.placeholder.is_none() {
+                cfg.placeholder = plugin.placeholder.clone();
+            }
             // write cache for entries collected
             match cache::write_cache(name, plugin, &entries) {
                 Ok(_) => {}
@@ -217,12 +223,16 @@ impl Args {
         };
         // load entries from configured sources
         let entries = match args.run.len() > 0 {
-            true => args.load_sources(&config)?,
+            true => args.load_sources(&mut config)?,
             false => args.load_default(&config)?,
         };
         // update configuration based on cli
         config.use_icons = config.use_icons && entries.iter().any(|e| e.icon.is_some());
+        config.use_comments = config.use_icons && entries.iter().any(|e| e.comment.is_some());
         config.search_regex = args.regex.unwrap_or(config.search_regex);
+        if args.placehold.is_some() {
+            config.placeholder = args.placehold.clone();
+        };
         // generate app object
         return Ok(App {
             css,

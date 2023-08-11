@@ -51,6 +51,10 @@ pub fn execute(action: &Action, term: Option<String>) {
             let command = strfmt(&terminal, &args).expect("Failed String Format");
             parse_args(&command)
         }
+        Method::Echo(echo) => {
+            println!("{echo}");
+            std::process::exit(0);
+        }
     };
     let err = Command::new(&args[0]).args(&args[1..]).exec();
     panic!("Command Error: {err:?}");

@@ -116,12 +116,8 @@ impl Default for WindowConfig {
     fn default() -> Self {
         Self {
             title: "RMenu - App Launcher".to_owned(),
-            // size: LogicalSize {
-            //     width: 700.0,
-            //     height: 400.0,
-            // },
             size: LogicalSize {
-                width: 1000.0,
+                width: 700.0,
                 height: 400.0,
             },
             position: LogicalPosition { x: 100.0, y: 100.0 },
@@ -182,6 +178,13 @@ pub struct PluginConfig {
     pub exec: Vec<String>,
     #[serde(default)]
     pub cache: CacheSetting,
+    #[serde(default)]
+    pub placeholder: Option<String>,
+}
+
+#[inline]
+fn _true() -> bool {
+    true
 }
 
 /// Global RMenu Complete Configuration
@@ -190,9 +193,15 @@ pub struct PluginConfig {
 pub struct Config {
     pub page_size: usize,
     pub page_load: f64,
+    #[serde(default = "_true")]
     pub use_icons: bool,
+    #[serde(default = "_true")]
+    pub use_comments: bool,
+    #[serde(default = "_true")]
     pub search_regex: bool,
+    #[serde(default = "_true")]
     pub ignore_case: bool,
+    pub placeholder: Option<String>,
     pub plugins: BTreeMap<String, PluginConfig>,
     pub keybinds: KeyConfig,
     pub window: WindowConfig,
@@ -205,8 +214,10 @@ impl Default for Config {
             page_size: 50,
             page_load: 0.8,
             use_icons: true,
+            use_comments: true,
             search_regex: false,
             ignore_case: true,
+            placeholder: Default::default(),
             plugins: Default::default(),
             keybinds: Default::default(),
             window: Default::default(),

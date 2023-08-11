@@ -121,13 +121,23 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
                         }
                     })
                 }
-                div {
-                    class: "name",
-                    "{cx.props.entry.name}"
-                }
-                div {
-                    class: "comment",
-                    render_comment(cx.props.entry.comment.as_ref())
+                match cx.props.state.config().use_comments {
+                    true => cx.render(rsx! {
+                        div {
+                            class: "name",
+                            "{cx.props.entry.name}"
+                        }
+                        div {
+                            class: "comment",
+                            render_comment(cx.props.entry.comment.as_ref())
+                        }
+                    }),
+                    false => cx.render(rsx! {
+                        div {
+                            class: "entry",
+                            "{cx.props.entry.name}"
+                        }
+                    })
                 }
             }
             div {
@@ -209,6 +219,16 @@ fn App<'a>(cx: Scope<App>) -> Element {
         })
     });
 
+    // retreive placeholder
+    let placeholder = cx
+        .props
+        .config
+        .placeholder
+        .as_ref()
+        .map(|s| s.to_string())
+        .unwrap_or_else(|| "".to_owned());
+
+    // complete final rendering
     cx.render(rsx! {
         style { DEFAULT_CSS_CONTENT }
         style { "{cx.props.css}" }
@@ -220,6 +240,7 @@ fn App<'a>(cx: Scope<App>) -> Element {
                 input {
                     id: "search",
                     value: "{search}",
+                    placeholder: "{placeholder}",
                     oninput: move |evt| s_updater.set_search(cx, evt.value.clone()),
                 }
             }

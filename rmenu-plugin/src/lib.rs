@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 pub enum Method {
     Terminal(String),
     Run(String),
+    Echo(String),
 }
 
 impl Method {
@@ -31,6 +32,13 @@ impl Action {
             comment: None,
         }
     }
+    pub fn echo(echo: &str) -> Self {
+        Self {
+            name: "main".to_string(),
+            exec: Method::Echo(echo.to_string()),
+            comment: None,
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -46,6 +54,15 @@ impl Entry {
         Self {
             name: name.to_owned(),
             actions: vec![Action::new(action)],
+            comment: comment.map(|c| c.to_owned()),
+            icon: Default::default(),
+        }
+    }
+
+    pub fn echo(echo: &str, comment: Option<&str>) -> Self {
+        Self {
+            name: echo.to_owned(),
+            actions: vec![Action::echo(echo)],
             comment: comment.map(|c| c.to_owned()),
             icon: Default::default(),
         }
