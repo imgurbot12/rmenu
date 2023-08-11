@@ -25,6 +25,10 @@ plugins:
   drun: 
     exec:  ["~/.config/rmenu/drun"]
     cache: onlogin
+  audio:
+    exec:  ["~/.config/rmenu/audio"]
+    cache: false
+    placeholder: "Select an Audio Sink"
 
 # custom keybindings
 keybinds:
