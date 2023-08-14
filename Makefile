@@ -21,6 +21,7 @@ deploy:
 	cp -vf ./target/release/desktop ${DEST}/drun
 	cp -vf ./target/release/run ${DEST}/run
 	cp -vf ./target/release/audio ${DEST}/audio
+	cp -vf ./target/release/rmenu-network ${DEST}/network
 	cp -vf ./rmenu/public/config.yaml ${DEST}/config.yaml
 
 build: build-rmenu build-plugins
@@ -32,3 +33,4 @@ build-plugins:
 	${CARGO} build -p run ${FLAGS}
 	${CARGO} build -p desktop ${FLAGS}
 	${CARGO} build -p audio ${FLAGS}
+	${CARGO} build -p rmenu-network ${FLAGS}

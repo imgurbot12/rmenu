@@ -6,4 +6,5 @@ members = [
   "plugin-run",
   "plugin-desktop",
   "plugin-audio",
+  "plugin-network",
 ]

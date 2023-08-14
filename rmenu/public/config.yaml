@@ -29,6 +29,10 @@ plugins:
     exec:  ["~/.config/rmenu/audio"]
     cache: false
     placeholder: "Select an Audio Sink"
+  network:
+    exec:  ["~/.config/rmenu/network"]
+    cache: false
+    placeholder: "Connect to the Specified Wi-Fi"
 
 # custom keybindings
 keybinds:

@@ -1,0 +1,96 @@
+
+html, body {
+  overflow: hidden;
+  font-size: 14px;
+  background-color: #e8edee;
+}
+
+#header {
+  padding: 0.15rem;
+}
+
+#controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+#secret {
+  width: -webkit-fill-available;
+  height: 2rem;
+
+  border: none;
+  outline: none;
+  padding: 0 0.5rem;
+  background-color: #ccd2df;
+}
+
+#icon {
+  float: right;
+  position: relative;
+  z-index: 2;
+  margin-left: -2.5rem;
+ 
+  display: flex;
+  align-items: center;
+  height: 2rem;
+  border: none;
+  background: none;
+}
+
+@keyframes movein {
+  from { margin-top: 10rem; }
+  to   { margin-top: 1rem; }
+}
+
+@keyframes moveout {
+  from { margin-top: 1rem; }
+  to   { bottom: 10rem; }
+}
+
+#message {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem; 
+  
+  font-size: 15px;
+  font-style: italic;
+  animation: movein 0.5s ease-in-out;
+}
+
+#message.error {
+  color: white;
+  background-color: #de5a5a;
+}
+
+#message.success {
+  color: white;
+  background-color: #53c351;
+}
+
+#blackout {
+  display:  none;
+  width:    100%;
+  height:   100%; 
+  position: absolute;
+  top:      0;
+  left:     0; 
+  z-index:  100; 
+
+  background-color: black;
+  filter: alpha(opacity=30);
+  opacity: 0.3;
+}
+
+#blackout > #spinner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#blackout.active {
+  display: block;
+}
