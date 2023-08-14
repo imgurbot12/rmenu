@@ -1,4 +1,4 @@
-use dioxus::prelude::{use_ref, Scope, UseRef};
+use dioxus::prelude::{use_eval, use_ref, Scope, UseRef};
 use rmenu_plugin::Entry;
 
 use crate::config::Config;
@@ -8,9 +8,9 @@ use crate::App;
 
 #[inline]
 fn scroll<T>(cx: Scope<T>, pos: usize) {
-    let eval = dioxus_desktop::use_eval(cx);
+    let eval = use_eval(cx);
     let js = format!("document.getElementById(`result-{pos}`).scrollIntoView(false)");
-    eval(js);
+    let _ = eval(&js);
 }
 
 #[derive(Debug, PartialEq, Clone)]

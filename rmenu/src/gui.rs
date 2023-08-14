@@ -151,9 +151,9 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
 
 #[inline]
 fn focus<T>(cx: Scope<T>) {
-    let eval = dioxus_desktop::use_eval(cx);
+    let eval = use_eval(cx);
     let js = "document.getElementById(`search`).focus()";
-    eval(js.to_owned());
+    let _ = eval(js);
 }
 
 /// check if the current inputs match any of the given keybindings
