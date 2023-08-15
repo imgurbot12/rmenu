@@ -20,17 +20,17 @@ window:
 # configured plugin settings
 plugins:
   run:  
-    exec:  ["~/.config/rmenu/run"]
+    exec:  ["~/.config/rmenu/rmenu-run"]
     cache: 300
   drun: 
-    exec:  ["~/.config/rmenu/drun"]
+    exec:  ["~/.config/rmenu/rmenu-desktop"]
     cache: onlogin
   audio:
-    exec:  ["~/.config/rmenu/audio"]
+    exec:  ["~/.config/rmenu/rmenu-audio"]
     cache: false
     placeholder: "Select an Audio Sink"
   network:
-    exec:  ["~/.config/rmenu/network"]
+    exec:  ["~/.config/rmenu/rmenu-network"]
     cache: false
     placeholder: "Connect to the Specified Wi-Fi"
 

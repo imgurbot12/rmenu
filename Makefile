@@ -18,10 +18,10 @@ install: build deploy
 deploy:
 	mkdir -p ${DEST}
 	cp -vf ./target/release/rmenu ${INSTALL}/rmenu
-	cp -vf ./target/release/desktop ${DEST}/drun
-	cp -vf ./target/release/run ${DEST}/run
-	cp -vf ./target/release/audio ${DEST}/audio
-	cp -vf ./target/release/rmenu-network ${DEST}/network
+	cp -vf ./target/release/desktop ${DEST}/rmenu-desktop
+	cp -vf ./target/release/run ${DEST}/rmenu-run
+	cp -vf ./target/release/audio ${DEST}/rmenu-audio
+	cp -vf ./target/release/network ${DEST}/rmenu-network
 	cp -vf ./rmenu/public/config.yaml ${DEST}/config.yaml
 
 build: build-rmenu build-plugins
@@ -33,4 +33,4 @@ build-plugins:
 	${CARGO} build -p run ${FLAGS}
 	${CARGO} build -p desktop ${FLAGS}
 	${CARGO} build -p audio ${FLAGS}
-	${CARGO} build -p rmenu-network ${FLAGS}
+	${CARGO} build -p network ${FLAGS}
