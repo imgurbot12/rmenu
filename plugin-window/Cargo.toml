@@ -1,0 +1,17 @@
+[package]
+name = "window"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["sway"]
+sway = []
+
+[dependencies]
+anyhow = "1.0.72"
+clap = { version = "4.3.21", features = ["derive"] }
+rmenu-plugin = { version = "0.0.1", path = "../rmenu-plugin" }
+serde = { version = "1.0.183", features = ["derive"] }
+serde_json = "1.0.104"

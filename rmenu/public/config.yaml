@@ -33,6 +33,10 @@ plugins:
     exec:  ["~/.config/rmenu/rmenu-network"]
     cache: false
     placeholder: "Connect to the Specified Wi-Fi"
+  window:
+    exec:  ["~/.config/rmenu/rmenu-window"]
+    cache: false
+    placeholder: "Jump to the Specified Window"
 
 # custom keybindings
 keybinds:
