@@ -9,6 +9,6 @@ edition = "2021"
 clap = { version = "4.3.21", features = ["derive"] }
 env_logger = "0.10.0"
 log = "0.4.19"
-rmenu-plugin = { version = "0.0.0", path = "../rmenu-plugin" }
+rmenu-plugin = { version = "0.0.1", path = "../rmenu-plugin" }
 serde_json = "1.0.104"
 thiserror = "1.0.44"
