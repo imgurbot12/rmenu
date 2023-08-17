@@ -1,5 +1,7 @@
 //! RMENU GUI Implementation using Dioxus
 #![allow(non_snake_case)]
+use std::fmt::Display;
+
 use dioxus::prelude::*;
 use keyboard_types::{Code, Modifiers};
 use rmenu_plugin::Entry;
@@ -26,6 +28,7 @@ pub fn run(app: App) {
         .with_decorations(app.config.window.decorate)
         .with_transparent(app.config.window.transparent)
         .with_always_on_top(app.config.window.always_top)
+        .with_fullscreen(app.config.window.get_fullscreen())
         .with_theme(theme);
     let config = dioxus_desktop::Config::new().with_window(builder);
     dioxus_desktop::launch_with_props(App, app, config);
@@ -41,19 +44,28 @@ struct GEntry<'a> {
 }
 
 #[inline]
-fn render_comment(comment: Option<&String>) -> String {
-    return comment.map(|s| s.as_str()).unwrap_or("").to_string();
+fn render_comment(comment: Option<&String>) -> &str {
+    comment.map(|s| s.as_str()).unwrap_or("")
 }
 
 #[inline]
-fn render_image<'a, T>(cx: Scope<'a, T>, image: Option<&String>) -> Element<'a> {
+fn render_image<'a, T>(
+    cx: Scope<'a, T>,
+    image: Option<&String>,
+    alt: Option<&String>,
+) -> Element<'a> {
     if let Some(img) = image {
         if img.ends_with(".svg") {
             if let Some(content) = crate::image::convert_svg(img.to_owned()) {
                 return cx.render(rsx! { img { class: "image", src: "{content}" } });
             }
         }
-        return cx.render(rsx! {  img { class: "image", src: "{img}" } });
+        if crate::image::image_exists(img.to_owned()) {
+            return cx.render(rsx! { img { class: "image", src: "{img}" } });
+        }
+    }
+    if let Some(alt) = alt {
+        return cx.render(rsx! { div { class: "icon_alt", dangerous_inner_html: "{alt}" } });
     }
     None
 }
@@ -95,7 +107,7 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
                     ondblclick: |_| cx.props.state.set_event(KeyEvent::Exec),
                     div {
                         class: "action-name",
-                        "{action.name}"
+                        dangerous_inner_html: "{action.name}"
                     }
                     div {
                         class: "action-comment",
@@ -117,7 +129,7 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
                     cx.render(rsx! {
                         div {
                             class: "icon",
-                            render_image(cx, cx.props.entry.icon.as_ref())
+                            render_image(cx, cx.props.entry.icon.as_ref(), cx.props.entry.icon_alt.as_ref())
                         }
                     })
                 }
@@ -125,17 +137,17 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
                     true => cx.render(rsx! {
                         div {
                             class: "name",
-                            "{cx.props.entry.name}"
+                            dangerous_inner_html: "{cx.props.entry.name}"
                         }
                         div {
                             class: "comment",
-                            render_comment(cx.props.entry.comment.as_ref())
+                            dangerous_inner_html: render_comment(cx.props.entry.comment.as_ref())
                         }
                     }),
                     false => cx.render(rsx! {
                         div {
                             class: "entry",
-                            "{cx.props.entry.name}"
+                            dangerous_inner_html: "{cx.props.entry.name}"
                         }
                     })
                 }
@@ -162,6 +174,12 @@ fn matches(bind: &Vec<Keybind>, mods: &Modifiers, key: &Code) -> bool {
     bind.iter().any(|b| mods.contains(b.mods) && &b.key == key)
 }
 
+/// retrieve string value for display-capable enum
+#[inline]
+fn get_str<T: Display>(item: Option<T>) -> String {
+    item.map(|i| i.to_string()).unwrap_or_else(String::new)
+}
+
 /// main application function/loop
 fn App<'a>(cx: Scope<App>) -> Element {
     let mut state = AppState::new(cx, cx.props);
@@ -176,11 +194,8 @@ fn App<'a>(cx: Scope<App>) -> Element {
 
     // generate state tracker instances
     let results = state.results(&cx.props.entries);
-    let s_updater = state.partial_copy();
     let k_updater = state.partial_copy();
-
-    //TODO: consider implementing some sort of
-    // action channel reference to pass to keboard events
+    let s_updater = state.partial_copy();
 
     // build keyboard actions event handler
     let keybinds = &cx.props.config.keybinds;
@@ -191,9 +206,9 @@ fn App<'a>(cx: Scope<App>) -> Element {
             k_updater.set_event(KeyEvent::Exec);
         } else if matches(&keybinds.exit, &mods, &code) {
             k_updater.set_event(KeyEvent::Exit);
-        } else if matches(&keybinds.move_up, &mods, &code) {
+        } else if matches(&keybinds.move_prev, &mods, &code) {
             k_updater.set_event(KeyEvent::ShiftUp);
-        } else if matches(&keybinds.move_down, &mods, &code) {
+        } else if matches(&keybinds.move_next, &mods, &code) {
             k_updater.set_event(KeyEvent::ShiftDown);
         } else if matches(&keybinds.open_menu, &mods, &code) {
             k_updater.set_event(KeyEvent::OpenMenu);
@@ -219,29 +234,46 @@ fn App<'a>(cx: Scope<App>) -> Element {
         })
     });
 
-    // retreive placeholder
-    let placeholder = cx
-        .props
-        .config
-        .placeholder
-        .as_ref()
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| "".to_owned());
+    // get input settings
+    let minlen = get_str(cx.props.config.search.min_length.as_ref());
+    let maxlen = get_str(cx.props.config.search.max_length.as_ref());
+    let placeholder = get_str(cx.props.config.search.placeholder.as_ref());
 
     // complete final rendering
     cx.render(rsx! {
         style { DEFAULT_CSS_CONTENT }
         style { "{cx.props.css}" }
+        style { "{cx.props.theme}" }
         div {
-            // onclick: |_| focus(cx),
-            onkeydown: keyboard_controls,
+            id: "content",
+            class: "content",
             div {
+                id: "navbar",
                 class: "navbar",
-                input {
-                    id: "search",
-                    value: "{search}",
-                    placeholder: "{placeholder}",
-                    oninput: move |evt| s_updater.set_search(cx, evt.value.clone()),
+                match cx.props.config.search.restrict.as_ref() {
+                    Some(pattern) => cx.render(rsx! {
+                        input {
+                            id: "search",
+                            value: "{search}",
+                            pattern: "{pattern}",
+                            minlength: "{minlen}",
+                            maxlength: "{maxlen}",
+                            placeholder: "{placeholder}",
+                            oninput: move |e| s_updater.set_search(cx, e.value.clone()),
+                            onkeydown: keyboard_controls,
+                        }
+                    }),
+                    None => cx.render(rsx! {
+                        input {
+                            id: "search",
+                            value: "{search}",
+                            minlength: "{minlen}",
+                            maxlength: "{maxlen}",
+                            placeholder: "{placeholder}",
+                            oninput: move |e| s_updater.set_search(cx, e.value.clone()),
+                            onkeydown: keyboard_controls,
+                        }
+                    })
                 }
             }
             div {

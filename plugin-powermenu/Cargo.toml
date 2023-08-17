@@ -1,0 +1,12 @@
+[package]
+name = "powermenu"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.3.21", features = ["derive"] }
+rmenu-plugin = { version = "0.0.1", path = "../rmenu-plugin" }
+serde_json = "1.0.105"
+tempfile = "3.7.1"

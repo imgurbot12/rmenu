@@ -1,4 +1,5 @@
 use dioxus::prelude::{use_eval, use_ref, Scope, UseRef};
+use regex::Regex;
 use rmenu_plugin::Entry;
 
 use crate::config::Config;
@@ -29,6 +30,7 @@ pub struct InnerState {
     page: usize,
     search: String,
     event: Option<KeyEvent>,
+    search_regex: Option<Regex>,
 }
 
 impl InnerState {
@@ -83,6 +85,21 @@ impl<'a> AppState<'a> {
                 page: 0,
                 search: "".to_string(),
                 event: None,
+                search_regex: app.config.search.restrict.clone().and_then(|mut r| {
+                    if !r.starts_with('^') {
+                        r = format!("^{r}")
+                    };
+                    if !r.ends_with('$') {
+                        r = format!("{r}$")
+                    };
+                    match Regex::new(&r) {
+                        Ok(regex) => Some(regex),
+                        Err(err) => {
+                            log::error!("Invalid Regex Expression: {:?}", err);
+                            None
+                        }
+                    }
+                }),
             }),
             app,
             results: vec![],
@@ -184,6 +201,27 @@ impl<'a> AppState<'a> {
 
     /// Update Search and Reset Position
     pub fn set_search(&self, cx: Scope<'_, App>, search: String) {
+        // confirm search meets required criteria
+        if let Some(min) = self.app.config.search.min_length.as_ref() {
+            if search.len() < *min {
+                return;
+            }
+        }
+        if let Some(min) = self.app.config.search.min_length.as_ref() {
+            if search.len() < *min {
+                return;
+            }
+        }
+        let is_match = self.state.with(|s| {
+            s.search_regex
+                .as_ref()
+                .map(|r| r.is_match(&search))
+                .unwrap_or(true)
+        });
+        if !is_match {
+            return;
+        }
+        // update search w/ new content
         self.state.with_mut(|s| {
             s.pos = 0;
             s.subpos = 0;

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Method {
     Terminal(String),
@@ -17,7 +17,7 @@ impl Method {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Action {
     pub name: String,
     pub exec: Method,
@@ -41,12 +41,13 @@ impl Action {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Entry {
     pub name: String,
     pub actions: Vec<Action>,
     pub comment: Option<String>,
     pub icon: Option<String>,
+    pub icon_alt: Option<String>,
 }
 
 impl Entry {
@@ -56,6 +57,7 @@ impl Entry {
             actions: vec![Action::new(action)],
             comment: comment.map(|c| c.to_owned()),
             icon: Default::default(),
+            icon_alt: Default::default(),
         }
     }
 
@@ -65,6 +67,17 @@ impl Entry {
             actions: vec![Action::echo(echo)],
             comment: comment.map(|c| c.to_owned()),
             icon: Default::default(),
+            icon_alt: Default::default(),
         }
     }
+}
+
+/// Retrieve EXE of Self
+#[inline]
+pub fn self_exe() -> String {
+    std::env::current_exe()
+        .expect("Cannot Find EXE of Self")
+        .to_str()
+        .unwrap()
+        .to_string()
 }

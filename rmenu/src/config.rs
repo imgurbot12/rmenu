@@ -5,7 +5,10 @@ use serde::{de::Error, Deserialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
 
-use dioxus_desktop::tao::dpi::{LogicalPosition, LogicalSize};
+use dioxus_desktop::tao::{
+    dpi::{LogicalPosition, LogicalSize},
+    window::Fullscreen,
+};
 
 // parse supported modifiers from string
 fn mod_from_str(s: &str) -> Option<Modifiers> {
@@ -19,7 +22,7 @@ fn mod_from_str(s: &str) -> Option<Modifiers> {
 }
 
 /// Single GUI Keybind for Configuration
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Keybind {
     pub mods: Modifiers,
     pub key: Code,
@@ -80,8 +83,8 @@ impl<'de> Deserialize<'de> for Keybind {
 pub struct KeyConfig {
     pub exec: Vec<Keybind>,
     pub exit: Vec<Keybind>,
-    pub move_up: Vec<Keybind>,
-    pub move_down: Vec<Keybind>,
+    pub move_next: Vec<Keybind>,
+    pub move_prev: Vec<Keybind>,
     pub open_menu: Vec<Keybind>,
     pub close_menu: Vec<Keybind>,
 }
@@ -91,8 +94,8 @@ impl Default for KeyConfig {
         return Self {
             exec: vec![Keybind::new(Code::Enter)],
             exit: vec![Keybind::new(Code::Escape)],
-            move_up: vec![Keybind::new(Code::ArrowUp)],
-            move_down: vec![Keybind::new(Code::ArrowDown)],
+            move_next: vec![Keybind::new(Code::ArrowUp)],
+            move_prev: vec![Keybind::new(Code::ArrowDown)],
             open_menu: vec![],
             close_menu: vec![],
         };
@@ -105,11 +108,24 @@ pub struct WindowConfig {
     pub title: String,
     pub size: LogicalSize<f64>,
     pub position: LogicalPosition<f64>,
+    #[serde(default = "_true")]
     pub focus: bool,
     pub decorate: bool,
     pub transparent: bool,
+    #[serde(default = "_true")]
     pub always_top: bool,
+    pub fullscreen: Option<bool>,
     pub dark_mode: Option<bool>,
+}
+
+impl WindowConfig {
+    /// Retrieve Desktop Compatabible Fullscreen Settings
+    pub fn get_fullscreen(&self) -> Option<Fullscreen> {
+        self.fullscreen.and_then(|fs| match fs {
+            true => Some(Fullscreen::Borderless(None)),
+            false => None,
+        })
+    }
 }
 
 impl Default for WindowConfig {
@@ -125,6 +141,7 @@ impl Default for WindowConfig {
             decorate: false,
             transparent: false,
             always_top: true,
+            fullscreen: None,
             dark_mode: None,
         }
     }
@@ -187,6 +204,32 @@ fn _true() -> bool {
     true
 }
 
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(default)]
+pub struct SearchConfig {
+    pub restrict: Option<String>,
+    pub min_length: Option<usize>,
+    pub max_length: Option<usize>,
+    pub placeholder: Option<String>,
+    #[serde(default = "_true")]
+    pub use_regex: bool,
+    #[serde(default = "_true")]
+    pub ignore_case: bool,
+}
+
+impl Default for SearchConfig {
+    fn default() -> Self {
+        Self {
+            restrict: Default::default(),
+            min_length: Default::default(),
+            max_length: Default::default(),
+            placeholder: Default::default(),
+            use_regex: true,
+            ignore_case: true,
+        }
+    }
+}
+
 /// Global RMenu Complete Configuration
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
@@ -197,11 +240,7 @@ pub struct Config {
     pub use_icons: bool,
     #[serde(default = "_true")]
     pub use_comments: bool,
-    #[serde(default = "_true")]
-    pub search_regex: bool,
-    #[serde(default = "_true")]
-    pub ignore_case: bool,
-    pub placeholder: Option<String>,
+    pub search: SearchConfig,
     pub plugins: BTreeMap<String, PluginConfig>,
     pub keybinds: KeyConfig,
     pub window: WindowConfig,
@@ -215,9 +254,7 @@ impl Default for Config {
             page_load: 0.8,
             use_icons: true,
             use_comments: true,
-            search_regex: false,
-            ignore_case: true,
-            placeholder: Default::default(),
+            search: Default::default(),
             plugins: Default::default(),
             keybinds: Default::default(),
             window: Default::default(),

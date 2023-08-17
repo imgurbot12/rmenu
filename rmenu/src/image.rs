@@ -75,3 +75,8 @@ pub fn convert_svg(path: String) -> Option<String> {
     }
     Some(new_path.to_str()?.to_string())
 }
+
+#[cached]
+pub fn image_exists(path: String) -> bool {
+    PathBuf::from(path).exists()
+}
