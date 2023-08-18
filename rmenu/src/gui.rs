@@ -12,7 +12,6 @@ use crate::{App, DEFAULT_CSS_CONTENT};
 
 /// spawn and run the app on the configured platform
 pub fn run(app: App) {
-    // customize window
     let theme = match app.config.window.dark_mode {
         Some(dark) => match dark {
             true => Some(dioxus_desktop::tao::window::Theme::Dark),
