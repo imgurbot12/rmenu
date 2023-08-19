@@ -5,7 +5,7 @@ use std::str::FromStr;
 use std::{fmt::Display, fs::read_to_string};
 
 use clap::Parser;
-use rmenu_plugin::Entry;
+use rmenu_plugin::{Entry, Message};
 use thiserror::Error;
 
 use crate::config::{Config, Keybind};
@@ -161,6 +161,8 @@ pub enum RMenuError {
     NoSuchPlugin(String),
     #[error("Invalid Plugin Specified")]
     InvalidPlugin(String),
+    #[error("Invalid Keybind Definition")]
+    InvalidKeybind(String),
     #[error("Command Runtime Exception")]
     CommandError(Option<ExitStatus>),
     #[error("Invalid JSON Entry Object")]
@@ -168,7 +170,6 @@ pub enum RMenuError {
 }
 
 pub type Result<T> = std::result::Result<T, RMenuError>;
-type MaybeEntry = Result<Entry>;
 
 macro_rules! cli_replace {
     ($key:expr, $repl:expr) => {
@@ -183,8 +184,22 @@ macro_rules! cli_replace {
     };
 }
 
+macro_rules! cli_keybind {
+    ($key:expr, $repl:expr) => {
+        if let Some(bind_strings) = $repl.as_ref() {
+            let mut keybinds = vec![];
+            for bind_str in bind_strings.iter() {
+                let bind =
+                    Keybind::from_str(bind_str).map_err(|e| RMenuError::InvalidKeybind(e))?;
+                keybinds.push(bind);
+            }
+            $key = keybinds;
+        }
+    };
+}
+
 impl Args {
-    /// Load Configuration File and Update w/ Argument Overrides
+    /// Load Configuration File
     pub fn get_config(&self) -> Result<Config> {
         // read configuration
         let path = self
@@ -193,13 +208,18 @@ impl Args {
             .map(|v| v.as_str())
             .unwrap_or(DEFAULT_CONFIG);
         let path = shellexpand::tilde(path).to_string();
-        let mut config: Config = match read_to_string(path) {
+        let config: Config = match read_to_string(path) {
             Ok(content) => serde_yaml::from_str(&content),
             Err(err) => {
                 log::error!("Failed to Load Config: {err:?}");
                 Ok(Config::default())
             }
         }?;
+        Ok(config)
+    }
+
+    /// Update Configuration w/ CLI Specified Settings
+    pub fn update_config(&self, mut config: Config) -> Config {
         // override basic settings
         config.terminal = self.terminal.clone().or_else(|| config.terminal);
         config.page_size = self.page_size.unwrap_or(config.page_size);
@@ -231,7 +251,7 @@ impl Args {
         cli_replace!(config.window.transparent, self.transparent, true);
         cli_replace!(config.window.always_top, self.always_top, true);
         cli_replace!(config.window.fullscreen, self.fullscreen);
-        Ok(config)
+        config
     }
 
     /// Load CSS or Default
@@ -258,20 +278,50 @@ impl Args {
         String::new()
     }
 
-    /// Read Entries Contained within the Given Reader
-    fn read_entries<T: Read>(&self, reader: BufReader<T>) -> impl Iterator<Item = MaybeEntry> {
-        let format = self.format.clone();
-        reader
-            .lines()
-            .filter_map(|l| l.ok())
-            .map(move |l| match format {
-                Format::Json => serde_json::from_str(&l).map_err(|e| RMenuError::InvalidJson(e)),
-                Format::DMenu => Ok(Entry::echo(l.trim(), None)),
-            })
+    fn read_entries<T: Read>(
+        &mut self,
+        r: BufReader<T>,
+        v: &mut Vec<Entry>,
+        c: &mut Config,
+    ) -> Result<()> {
+        for line in r.lines().filter_map(|l| l.ok()) {
+            match &self.format {
+                Format::DMenu => v.push(Entry::echo(line.trim(), None)),
+                Format::Json => {
+                    let msg: Message = serde_json::from_str(&line)?;
+                    match msg {
+                        Message::Entry(entry) => v.push(entry),
+                        Message::Options(options) => {
+                            // base settings
+                            self.theme = self.theme.clone().or(options.theme);
+                            // search settings
+                            cli_replace!(c.search.placeholder, options.placeholder);
+                            cli_replace!(c.search.restrict, options.search_restrict);
+                            cli_replace!(c.search.min_length, options.search_min_length);
+                            cli_replace!(c.search.max_length, options.search_max_length);
+                            // keybind settings
+                            cli_keybind!(c.keybinds.exec, options.key_exec);
+                            cli_keybind!(c.keybinds.exec, options.key_exec);
+                            cli_keybind!(c.keybinds.exit, options.key_exit);
+                            cli_keybind!(c.keybinds.move_next, options.key_move_next);
+                            cli_keybind!(c.keybinds.move_prev, options.key_move_prev);
+                            cli_keybind!(c.keybinds.open_menu, options.key_open_menu);
+                            cli_keybind!(c.keybinds.close_menu, options.key_close_menu);
+                            // window settings
+                            cli_replace!(c.window.title, options.title, true);
+                            cli_replace!(c.window.decorate, options.decorate, true);
+                            cli_replace!(c.window.size.width, options.window_width, true);
+                            cli_replace!(c.window.size.height, options.window_height, true);
+                        }
+                    }
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Read Entries from a Configured Input
-    fn load_input(&self, input: &str) -> Result<Vec<Entry>> {
+    fn load_input(&mut self, input: &str, config: &mut Config) -> Result<Vec<Entry>> {
         // retrieve input file
         let input = if input == "-" { "/dev/stdin" } else { input };
         let fpath = shellexpand::tilde(input).to_string();
@@ -280,24 +330,23 @@ impl Args {
         let file = File::open(fpath)?;
         let reader = BufReader::new(file);
         let mut entries = vec![];
-        for entry in self.read_entries(reader) {
-            entries.push(entry?);
-        }
+        self.read_entries(reader, &mut entries, config)?;
         Ok(entries)
     }
 
     /// Read Entries from a Plugin Source
-    fn load_plugins(&self, config: &mut Config) -> Result<Vec<Entry>> {
+    fn load_plugins(&mut self, config: &mut Config) -> Result<Vec<Entry>> {
         let mut entries = vec![];
-        for name in self.run.iter() {
+        for name in self.run.clone().into_iter() {
             // retrieve plugin configuration
             log::info!("running plugin: {name:?}");
             let plugin = config
                 .plugins
-                .get(name)
+                .get(&name)
+                .cloned()
                 .ok_or_else(|| RMenuError::NoSuchPlugin(name.to_owned()))?;
             // read cache when available
-            match crate::cache::read_cache(name, plugin) {
+            match crate::cache::read_cache(&name, &plugin) {
                 Err(err) => log::error!("cache read failed: {err:?}"),
                 Ok(cached) => {
                     entries.extend(cached);
@@ -323,9 +372,7 @@ impl Args {
                 .as_mut()
                 .ok_or_else(|| RMenuError::CommandError(None))?;
             let reader = BufReader::new(stdout);
-            for entry in self.read_entries(reader) {
-                entries.push(entry?);
-            }
+            self.read_entries(reader, &mut entries, config)?;
             let status = command.wait()?;
             if !status.success() {
                 return Err(RMenuError::CommandError(Some(status)));
@@ -334,7 +381,7 @@ impl Args {
             if config.search.placeholder.is_none() {
                 config.search.placeholder = plugin.placeholder.clone();
             }
-            match crate::cache::write_cache(name, plugin, &entries) {
+            match crate::cache::write_cache(&name, &plugin, &entries) {
                 Ok(_) => {}
                 Err(err) => log::error!("cache write error: {err:?}"),
             }
@@ -343,7 +390,7 @@ impl Args {
     }
 
     /// Load Entries from Enabled/Configured Entry-Sources
-    pub fn get_entries(&self, config: &mut Config) -> Result<Vec<Entry>> {
+    pub fn get_entries(&mut self, config: &mut Config) -> Result<Vec<Entry>> {
         // configure default source if none are given
         let mut input = self.input.clone();
         let mut entries = vec![];
@@ -352,7 +399,7 @@ impl Args {
         }
         // load entries
         if let Some(input) = input {
-            entries.extend(self.load_input(&input)?);
+            entries.extend(self.load_input(&input, config)?);
         }
         entries.extend(self.load_plugins(config)?);
         Ok(entries)

@@ -42,13 +42,14 @@ fn main() -> cli::Result<()> {
     env_logger::init();
 
     // parse cli and retrieve values for app
-    let cli = cli::Args::parse();
+    let mut cli = cli::Args::parse();
     let mut config = cli.get_config()?;
+    let entries = cli.get_entries(&mut config)?;
     let css = cli.get_css();
     let theme = cli.get_theme();
-    let entries = cli.get_entries(&mut config)?;
 
-    // update config based on entries
+    // update config based on cli-settings and entries
+    config = cli.update_config(config);
     config.use_icons = config.use_icons
         && entries
             .iter()

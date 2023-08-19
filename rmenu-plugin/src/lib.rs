@@ -83,29 +83,52 @@ impl Entry {
 
 /// Additional Plugin Option Overrides
 #[derive(Debug, Default, PartialEq, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename = "options")]
-#[serde(default)]
+#[serde(default, tag = "type", rename = "options")]
 pub struct Options {
     // base settings
-    theme: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub theme: Option<String>,
     // search settings
-    placeholder: Option<String>,
-    search_restrict: Option<String>,
-    search_min_length: Option<usize>,
-    search_max_length: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub placeholder: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_restrict: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_min_length: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub search_max_length: Option<usize>,
     // key settings
-    key_exec: Option<Vec<String>>,
-    key_exit: Option<Vec<String>>,
-    key_move_next: Option<Vec<String>>,
-    key_move_prev: Option<Vec<String>>,
-    key_open_menu: Option<Vec<String>>,
-    key_close_menu: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_exec: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_exit: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_move_next: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_move_prev: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_open_menu: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_close_menu: Option<Vec<String>>,
     // window settings
-    title: Option<String>,
-    deocorate: Option<bool>,
-    fullscreen: Option<bool>,
-    window_width: Option<usize>,
-    window_height: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub decorate: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fullscreen: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub window_width: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub window_height: Option<f64>,
+}
+
+/// Valid RMenu Plugin Messages
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+pub enum Message {
+    Entry(Entry),
+    Options(Options),
 }
 
 /// Retrieve EXE of Self

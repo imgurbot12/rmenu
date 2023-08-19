@@ -148,7 +148,7 @@ impl Default for WindowConfig {
 }
 
 /// Cache Settings for Configured RMenu Plugins
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum CacheSetting {
     NoCache,
     Never,
@@ -190,7 +190,7 @@ impl Default for CacheSetting {
 }
 
 /// RMenu Data-Source Plugin Configuration
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct PluginConfig {
     pub exec: Vec<String>,
     #[serde(default)]
