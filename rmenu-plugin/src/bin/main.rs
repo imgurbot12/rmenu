@@ -98,10 +98,10 @@ struct EntryArgs {
     #[clap(required = true)]
     actions: Vec<Action>,
     /// Icon Image Path
-    #[arg(short, long)]
+    #[arg(short = 'i', long)]
     icon: Option<String>,
     /// Alternative Image Text/HTML
-    #[arg(short = 'o', long)]
+    #[arg(short = 'I', long)]
     icon_alt: Option<String>,
 }
 
