@@ -18,6 +18,7 @@ install: build deploy
 deploy:
 	mkdir -p ${DEST}
 	cp -vf ./target/release/rmenu ${INSTALL}/rmenu
+	cp -vf ./target/release/rmenu-build ${INSTALL}/rmenu-build
 	cp -vf ./target/release/desktop ${DEST}/rmenu-desktop
 	cp -vf ./target/release/run ${DEST}/rmenu-run
 	cp -vf ./target/release/audio ${DEST}/rmenu-audio
@@ -29,6 +30,7 @@ build: build-rmenu build-plugins
 
 build-rmenu:
 	${CARGO} build -p rmenu ${FLAGS}
+	${CARGO} build -p rmenu-plugin --bin rmenu-build ${FLAGS}
 
 build-plugins:
 	${CARGO} build -p run ${FLAGS}
