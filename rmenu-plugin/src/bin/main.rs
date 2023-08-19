@@ -21,6 +21,12 @@ fn parse_action(action: &str) -> Result<Action, serde_json::Error> {
 enum Command {
     /// Generate Complete RMenu Entry
     Entry {
+        /// Set Name of Entry
+        #[arg(short, long, default_value_t=String::from("main"))]
+        name: String,
+        /// Set Comment of Entry
+        #[arg(short, long)]
+        comment: Option<String>,
         /// Precomposed Action JSON Objects
         #[arg(short, long, value_parser=parse_action)]
         #[clap(required = true)]
@@ -34,6 +40,12 @@ enum Command {
     },
     /// Generate RMenu Entry Action Object
     Action {
+        /// Set Name of Action
+        #[arg(short, long, default_value_t=String::from("main"))]
+        name: String,
+        /// Set Comment of Action
+        #[arg(short, long)]
+        comment: Option<String>,
         /// Arguments to run As Action Command
         #[clap(required = true, value_delimiter = ' ')]
         args: Vec<String>,
@@ -47,12 +59,6 @@ enum Command {
 #[command(author, version, about, long_about = None)]
 #[command(propagate_version = true)]
 struct Cli {
-    /// Set Name of Entry/Action
-    #[arg(short, long, default_value_t=String::from("main"))]
-    name: String,
-    /// Set Comment of Entry/Action
-    #[arg(short, long)]
-    comment: Option<String>,
     /// Generate an Entry/Action Object
     #[clap(subcommand)]
     command: Command,
@@ -62,20 +68,27 @@ fn main() {
     let cli = Cli::parse();
     let result = match cli.command {
         Command::Entry {
+            name,
+            comment,
             actions,
             icon,
             icon_alt,
         } => serde_json::to_string(&Entry {
-            name: cli.name,
-            comment: cli.comment,
+            name,
+            comment,
             actions,
             icon,
             icon_alt,
         }),
-        Command::Action { args, terminal } => serde_json::to_string(&Action {
-            name: cli.name,
+        Command::Action {
+            name,
+            comment,
+            args,
+            terminal,
+        } => serde_json::to_string(&Action {
+            name,
             exec: Method::new(args.join(" "), terminal),
-            comment: cli.comment,
+            comment,
         }),
     };
     println!("{}", result.expect("Serialization Failed"));

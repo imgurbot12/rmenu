@@ -49,6 +49,7 @@ impl Action {
 
 /// RMenu Menu-Entry Implementation
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename = "entry")]
 pub struct Entry {
     pub name: String,
     pub actions: Vec<Action>,
@@ -78,6 +79,33 @@ impl Entry {
             icon_alt: Default::default(),
         }
     }
+}
+
+/// Additional Plugin Option Overrides
+#[derive(Debug, Default, PartialEq, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", rename = "options")]
+#[serde(default)]
+pub struct Options {
+    // base settings
+    theme: Option<String>,
+    // search settings
+    placeholder: Option<String>,
+    search_restrict: Option<String>,
+    search_min_length: Option<usize>,
+    search_max_length: Option<usize>,
+    // key settings
+    key_exec: Option<Vec<String>>,
+    key_exit: Option<Vec<String>>,
+    key_move_next: Option<Vec<String>>,
+    key_move_prev: Option<Vec<String>>,
+    key_open_menu: Option<Vec<String>>,
+    key_close_menu: Option<Vec<String>>,
+    // window settings
+    title: Option<String>,
+    deocorate: Option<bool>,
+    fullscreen: Option<bool>,
+    window_width: Option<usize>,
+    window_height: Option<usize>,
 }
 
 /// Retrieve EXE of Self
