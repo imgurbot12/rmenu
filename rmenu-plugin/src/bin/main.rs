@@ -125,7 +125,7 @@ struct OptionArgs {
     pub theme: Option<String>,
     // search settings
     /// Override Default Placeholder
-    #[arg(short, long)]
+    #[arg(short = 'P', long)]
     pub placeholder: Option<String>,
     /// Override Search Restriction
     #[arg(short = 'r', long)]

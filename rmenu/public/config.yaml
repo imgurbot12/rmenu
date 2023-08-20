@@ -25,10 +25,6 @@ plugins:
   drun: 
     exec:  ["~/.config/rmenu/rmenu-desktop"]
     cache: onlogin
-  audio:
-    exec:  ["~/.config/rmenu/rmenu-audio"]
-    cache: false
-    placeholder: "Select an Audio Sink"
   network:
     exec:  ["~/.config/rmenu/rmenu-network"]
     cache: false
@@ -37,6 +33,13 @@ plugins:
     exec:  ["~/.config/rmenu/rmenu-window"]
     cache: false
     placeholder: "Jump to the Specified Window"
+  audio:
+    exec:  ["sh", "~/.config/rmenu/pactl-audio.sh"]
+    cache: false
+    placeholder: "Select an Audio Sink"
+  powermenu:
+    exec: ["sh", "~/.config/rmenu/powermenu.sh", "list", "confirm"]
+    cache: false
 
 # custom keybindings
 keybinds:
