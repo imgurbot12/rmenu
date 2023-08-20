@@ -45,7 +45,7 @@ fn main() -> cli::Result<()> {
     let mut cli = cli::Args::parse();
     let mut config = cli.get_config()?;
     let entries = cli.get_entries(&mut config)?;
-    let css = cli.get_css();
+    let css = cli.get_css(&config);
     let theme = cli.get_theme();
 
     // update config based on cli-settings and entries

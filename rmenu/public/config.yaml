@@ -25,6 +25,15 @@ plugins:
   drun: 
     exec:  ["~/.config/rmenu/rmenu-desktop"]
     cache: onlogin
+    options:
+      css: ~/Code/rust/rmenu2/themes/fullscreen.css
+      transparent: true
+      window_width: 1200
+      window_height: 800
+      key_move_prev: ["Arrow-Left"]
+      key_move_next: ["Arrow-Right"]
+      key_jump_prev: ["Arrow-Up"]
+      key_jump_next: ["Arrow-Down"]
   network:
     exec:  ["~/.config/rmenu/rmenu-network"]
     cache: false

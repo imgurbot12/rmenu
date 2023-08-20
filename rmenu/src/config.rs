@@ -1,6 +1,7 @@
 //! RMENU Configuration Implementations
 use heck::AsPascalCase;
 use keyboard_types::{Code, Modifiers};
+use rmenu_plugin::Options;
 use serde::{de::Error, Deserialize};
 use std::collections::BTreeMap;
 use std::str::FromStr;
@@ -201,6 +202,8 @@ pub struct PluginConfig {
     pub cache: CacheSetting,
     #[serde(default)]
     pub placeholder: Option<String>,
+    #[serde(default)]
+    pub options: Option<Options>,
 }
 
 #[inline]
@@ -249,6 +252,7 @@ pub struct Config {
     pub plugins: BTreeMap<String, PluginConfig>,
     pub keybinds: KeyConfig,
     pub window: WindowConfig,
+    pub css: Option<String>,
     pub terminal: Option<String>,
 }
 
@@ -264,7 +268,67 @@ impl Default for Config {
             plugins: Default::default(),
             keybinds: Default::default(),
             window: Default::default(),
-            terminal: Default::default(),
+            css: None,
+            terminal: None,
         }
+    }
+}
+
+macro_rules! cfg_replace {
+    ($key:expr, $repl:expr) => {
+        if $repl.is_some() {
+            $key = $repl.clone();
+        }
+    };
+    ($key:expr, $repl:expr, true) => {
+        if let Some(value) = $repl.as_ref() {
+            $key = value.to_owned();
+        }
+    };
+}
+
+macro_rules! cfg_keybind {
+    ($key:expr, $repl:expr) => {
+        if let Some(bind_strings) = $repl.as_ref() {
+            let mut keybinds = vec![];
+            for bind_str in bind_strings.iter() {
+                let bind = Keybind::from_str(bind_str)?;
+                keybinds.push(bind);
+            }
+            $key = keybinds;
+        }
+    };
+}
+
+pub(crate) use cfg_keybind;
+pub(crate) use cfg_replace;
+
+impl Config {
+    /// Update Configuration from Options Object
+    pub fn update(&mut self, options: &Options) -> Result<(), String> {
+        cfg_replace!(self.css, options.css);
+        // search settings
+        cfg_replace!(self.search.placeholder, options.placeholder);
+        cfg_replace!(self.search.restrict, options.search_restrict);
+        cfg_replace!(self.search.min_length, options.search_min_length);
+        cfg_replace!(self.search.max_length, options.search_max_length);
+        // keybind settings
+        cfg_keybind!(self.keybinds.exec, options.key_exec);
+        cfg_keybind!(self.keybinds.exec, options.key_exec);
+        cfg_keybind!(self.keybinds.exit, options.key_exit);
+        cfg_keybind!(self.keybinds.move_next, options.key_move_next);
+        cfg_keybind!(self.keybinds.move_prev, options.key_move_prev);
+        cfg_keybind!(self.keybinds.open_menu, options.key_open_menu);
+        cfg_keybind!(self.keybinds.close_menu, options.key_close_menu);
+        cfg_keybind!(self.keybinds.jump_next, options.key_jump_next);
+        cfg_keybind!(self.keybinds.jump_prev, options.key_jump_prev);
+        // window settings
+        cfg_replace!(self.window.title, options.title, true);
+        cfg_replace!(self.window.decorate, options.decorate, true);
+        cfg_replace!(self.window.fullscreen, options.fullscreen);
+        cfg_replace!(self.window.transparent, options.transparent, true);
+        cfg_replace!(self.window.size.width, options.window_width, true);
+        cfg_replace!(self.window.size.height, options.window_height, true);
+        Ok(())
     }
 }

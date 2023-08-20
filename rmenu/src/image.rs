@@ -1,5 +1,5 @@
 //! GUI Image Processing
-use std::fs::{create_dir_all, read_to_string, write};
+use std::fs::{create_dir_all, write};
 use std::io;
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -37,9 +37,9 @@ fn make_temp() -> Result<(), io::Error> {
 /// Convert SVG to PNG Image
 fn svg_to_png(path: &str, dest: &PathBuf, pixels: u32) -> Result<(), SvgError> {
     // read and convert to resvg document tree
-    let xml = read_to_string(path)?;
+    let xml = std::fs::read(path)?;
     let opt = resvg::usvg::Options::default();
-    let tree = resvg::usvg::Tree::from_str(&xml, &opt)?;
+    let tree = resvg::usvg::Tree::from_data(&xml, &opt)?;
     let rtree = resvg::Tree::from_usvg(&tree);
     // generate pixel-buffer and scale according to size preference
     let size = rtree.size.to_int_size();

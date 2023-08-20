@@ -8,7 +8,7 @@ use clap::Parser;
 use rmenu_plugin::{Entry, Message};
 use thiserror::Error;
 
-use crate::config::{Config, Keybind};
+use crate::config::{cfg_replace, Config, Keybind};
 use crate::{DEFAULT_CONFIG, DEFAULT_CSS};
 
 /// Allowed Formats for Entry Ingestion
@@ -177,33 +177,6 @@ pub enum RMenuError {
 
 pub type Result<T> = std::result::Result<T, RMenuError>;
 
-macro_rules! cli_replace {
-    ($key:expr, $repl:expr) => {
-        if $repl.is_some() {
-            $key = $repl.clone();
-        }
-    };
-    ($key:expr, $repl:expr, true) => {
-        if let Some(value) = $repl.as_ref() {
-            $key = value.to_owned();
-        }
-    };
-}
-
-macro_rules! cli_keybind {
-    ($key:expr, $repl:expr) => {
-        if let Some(bind_strings) = $repl.as_ref() {
-            let mut keybinds = vec![];
-            for bind_str in bind_strings.iter() {
-                let bind =
-                    Keybind::from_str(bind_str).map_err(|e| RMenuError::InvalidKeybind(e))?;
-                keybinds.push(bind);
-            }
-            $key = keybinds;
-        }
-    };
-}
-
 impl Args {
     /// Load Configuration File
     pub fn get_config(&self) -> Result<Config> {
@@ -233,32 +206,32 @@ impl Args {
         config.use_icons = self.use_icons.unwrap_or(config.use_icons);
         config.use_comments = self.use_icons.unwrap_or(config.use_comments);
         // override search settings
-        cli_replace!(config.search.restrict, self.search_restrict);
-        cli_replace!(config.search.min_length, self.search_min_length);
-        cli_replace!(config.search.max_length, self.search_max_length);
-        cli_replace!(config.search.use_regex, self.search_regex, true);
-        cli_replace!(config.search.ignore_case, self.ignore_case, true);
-        cli_replace!(config.search.placeholder, self.placeholder);
+        cfg_replace!(config.search.restrict, self.search_restrict);
+        cfg_replace!(config.search.min_length, self.search_min_length);
+        cfg_replace!(config.search.max_length, self.search_max_length);
+        cfg_replace!(config.search.use_regex, self.search_regex, true);
+        cfg_replace!(config.search.ignore_case, self.ignore_case, true);
+        cfg_replace!(config.search.placeholder, self.placeholder);
         // override keybind settings
-        cli_replace!(config.keybinds.exec, self.key_exec, true);
-        cli_replace!(config.keybinds.exit, self.key_exit, true);
-        cli_replace!(config.keybinds.move_next, self.key_move_next, true);
-        cli_replace!(config.keybinds.move_prev, self.key_move_prev, true);
-        cli_replace!(config.keybinds.open_menu, self.key_open_menu, true);
-        cli_replace!(config.keybinds.close_menu, self.key_close_menu, true);
-        cli_replace!(config.keybinds.jump_next, self.key_jump_next, true);
-        cli_replace!(config.keybinds.jump_prev, self.key_jump_prev, true);
+        cfg_replace!(config.keybinds.exec, self.key_exec, true);
+        cfg_replace!(config.keybinds.exit, self.key_exit, true);
+        cfg_replace!(config.keybinds.move_next, self.key_move_next, true);
+        cfg_replace!(config.keybinds.move_prev, self.key_move_prev, true);
+        cfg_replace!(config.keybinds.open_menu, self.key_open_menu, true);
+        cfg_replace!(config.keybinds.close_menu, self.key_close_menu, true);
+        cfg_replace!(config.keybinds.jump_next, self.key_jump_next, true);
+        cfg_replace!(config.keybinds.jump_prev, self.key_jump_prev, true);
         // override window settings
-        cli_replace!(config.window.title, self.title, true);
-        cli_replace!(config.window.size.width, self.width, true);
-        cli_replace!(config.window.size.height, self.height, true);
-        cli_replace!(config.window.position.x, self.xpos, true);
-        cli_replace!(config.window.position.y, self.ypos, true);
-        cli_replace!(config.window.focus, self.focus, true);
-        cli_replace!(config.window.decorate, self.decorate, true);
-        cli_replace!(config.window.transparent, self.transparent, true);
-        cli_replace!(config.window.always_top, self.always_top, true);
-        cli_replace!(config.window.fullscreen, self.fullscreen);
+        cfg_replace!(config.window.title, self.title, true);
+        cfg_replace!(config.window.size.width, self.width, true);
+        cfg_replace!(config.window.size.height, self.height, true);
+        cfg_replace!(config.window.position.x, self.xpos, true);
+        cfg_replace!(config.window.position.y, self.ypos, true);
+        cfg_replace!(config.window.focus, self.focus, true);
+        cfg_replace!(config.window.decorate, self.decorate, true);
+        cfg_replace!(config.window.transparent, self.transparent, true);
+        cfg_replace!(config.window.always_top, self.always_top, true);
+        cfg_replace!(config.window.fullscreen, self.fullscreen);
         config
     }
 
@@ -275,8 +248,8 @@ impl Args {
     }
 
     /// Load Additional CSS or Default
-    pub fn get_css(&self) -> String {
-        if let Some(css) = self.css.as_ref() {
+    pub fn get_css(&self, c: &Config) -> String {
+        if let Some(css) = self.css.as_ref().or(c.css.as_ref()) {
             let path = shellexpand::tilde(&css).to_string();
             match read_to_string(&path) {
                 Ok(theme) => return theme,
@@ -299,30 +272,9 @@ impl Args {
                     let msg: Message = serde_json::from_str(&line)?;
                     match msg {
                         Message::Entry(entry) => v.push(entry),
-                        Message::Options(options) => {
-                            // base settings
-                            self.css = self.css.clone().or(options.css);
-                            // search settings
-                            cli_replace!(c.search.placeholder, options.placeholder);
-                            cli_replace!(c.search.restrict, options.search_restrict);
-                            cli_replace!(c.search.min_length, options.search_min_length);
-                            cli_replace!(c.search.max_length, options.search_max_length);
-                            // keybind settings
-                            cli_keybind!(c.keybinds.exec, options.key_exec);
-                            cli_keybind!(c.keybinds.exec, options.key_exec);
-                            cli_keybind!(c.keybinds.exit, options.key_exit);
-                            cli_keybind!(c.keybinds.move_next, options.key_move_next);
-                            cli_keybind!(c.keybinds.move_prev, options.key_move_prev);
-                            cli_keybind!(c.keybinds.open_menu, options.key_open_menu);
-                            cli_keybind!(c.keybinds.close_menu, options.key_close_menu);
-                            cli_keybind!(c.keybinds.jump_next, options.key_jump_next);
-                            cli_keybind!(c.keybinds.jump_prev, options.key_jump_prev);
-                            // window settings
-                            cli_replace!(c.window.title, options.title, true);
-                            cli_replace!(c.window.decorate, options.decorate, true);
-                            cli_replace!(c.window.size.width, options.window_width, true);
-                            cli_replace!(c.window.size.height, options.window_height, true);
-                        }
+                        Message::Options(options) => c
+                            .update(&options)
+                            .map_err(|s| RMenuError::InvalidKeybind(s))?,
                     }
                 }
             }
@@ -355,6 +307,12 @@ impl Args {
                 .get(&name)
                 .cloned()
                 .ok_or_else(|| RMenuError::NoSuchPlugin(name.to_owned()))?;
+            // update config w/ plugin options when available
+            if let Some(options) = plugin.options.as_ref() {
+                config
+                    .update(options)
+                    .map_err(|e| RMenuError::InvalidKeybind(e))?;
+            }
             // read cache when available
             match crate::cache::read_cache(&name, &plugin) {
                 Err(err) => log::error!("cache read failed: {err:?}"),

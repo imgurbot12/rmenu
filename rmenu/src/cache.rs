@@ -78,7 +78,7 @@ pub fn write_cache(name: &str, cfg: &PluginConfig, entries: &Vec<Entry>) -> Resu
     match cfg.cache {
         CacheSetting::NoCache => {}
         _ => {
-            println!("writing {} entries", entries.len());
+            log::debug!("{name:?} writing {} entries", entries.len());
             let path = cache_file(name);
             let f = fs::File::create(path)?;
             serde_json::to_writer(f, entries)?;

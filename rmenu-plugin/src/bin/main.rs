@@ -171,6 +171,9 @@ struct OptionArgs {
     /// Override Window Fullscreen Settings
     #[arg(short, long)]
     pub fullscreen: Option<bool>,
+    /// Override Window Tranparent Settings
+    #[arg(short, long)]
+    pub transparent: Option<bool>,
     /// Override Window Width
     #[arg(short = 'w', long)]
     pub window_width: Option<f64>,
@@ -198,6 +201,7 @@ impl Into<Options> for OptionArgs {
             title: self.title,
             decorate: self.deocorate,
             fullscreen: self.fullscreen,
+            transparent: self.transparent,
             window_width: self.window_width,
             window_height: self.window_height,
         }
