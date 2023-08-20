@@ -17,6 +17,7 @@ install: build deploy
 
 deploy:
 	mkdir -p ${DEST}
+	cp -vfr themes ${DEST}/themes
 	cp -vfr other-plugins/* ${DEST}/.
 	cp -vf ./target/release/rmenu ${INSTALL}/rmenu
 	cp -vf ./target/release/rmenu-build ${INSTALL}/rmenu-build
@@ -25,6 +26,7 @@ deploy:
 	cp -vf ./target/release/network ${DEST}/rmenu-network
 	cp -vf ./target/release/window ${DEST}/rmenu-window
 	cp -vf ./rmenu/public/config.yaml ${DEST}/config.yaml
+	ln -sf  ${DEST}/themes/dark.css ${DEST}/style.css
 
 build: build-rmenu build-plugins
 

@@ -26,7 +26,7 @@ plugins:
     exec:  ["~/.config/rmenu/rmenu-desktop"]
     cache: onlogin
     options:
-      css: ~/Code/rust/rmenu2/themes/fullscreen.css
+      css: ~/.config/rmenu/themes/launchpad.css
       transparent: true
       window_width: 1200
       window_height: 800
@@ -56,5 +56,7 @@ keybinds:
   exit:       ["Escape"]
   move_next:  ["Arrow-Down", "Tab"]
   move_prev:  ["Arrow-Up", "Shift+Tab"]
+  jump_next:  ["Page-Down"]
+  jump_prev:  ["Page-Up"]
   open_menu:  ["Arrow-Right"]
   close_menu: ["Arrow-Left"]
