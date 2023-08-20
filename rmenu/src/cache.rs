@@ -1,6 +1,5 @@
 //! RMenu Plugin Result Cache
 use std::fs;
-use std::io::Write;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
@@ -25,7 +24,7 @@ pub enum CacheError {
     #[error("Cache File Error")]
     FileError(#[from] std::io::Error),
     #[error("Encoding Error")]
-    EncodingError(#[from] bincode::Error),
+    EncodingError(#[from] serde_json::Error),
 }
 
 #[inline]
@@ -69,7 +68,7 @@ pub fn read_cache(name: &str, cfg: &PluginConfig) -> Result<Vec<Entry>, CacheErr
     }
     // attempt to read content
     let data = fs::read(path)?;
-    let results: Vec<Entry> = bincode::deserialize(&data)?;
+    let results: Vec<Entry> = serde_json::from_slice(&data)?;
     Ok(results)
 }
 
@@ -79,10 +78,10 @@ pub fn write_cache(name: &str, cfg: &PluginConfig, entries: &Vec<Entry>) -> Resu
     match cfg.cache {
         CacheSetting::NoCache => {}
         _ => {
+            println!("writing {} entries", entries.len());
             let path = cache_file(name);
-            let data = bincode::serialize(entries)?;
-            let mut f = fs::File::create(path)?;
-            f.write_all(&data)?;
+            let f = fs::File::create(path)?;
+            serde_json::to_writer(f, entries)?;
         }
     }
     Ok(())

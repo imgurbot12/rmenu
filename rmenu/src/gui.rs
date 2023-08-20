@@ -205,14 +205,18 @@ fn App<'a>(cx: Scope<App>) -> Element {
             k_updater.set_event(KeyEvent::Exec);
         } else if matches(&keybinds.exit, &mods, &code) {
             k_updater.set_event(KeyEvent::Exit);
-        } else if matches(&keybinds.move_prev, &mods, &code) {
-            k_updater.set_event(KeyEvent::ShiftUp);
         } else if matches(&keybinds.move_next, &mods, &code) {
-            k_updater.set_event(KeyEvent::ShiftDown);
+            k_updater.set_event(KeyEvent::MoveNext);
+        } else if matches(&keybinds.move_prev, &mods, &code) {
+            k_updater.set_event(KeyEvent::MovePrev);
         } else if matches(&keybinds.open_menu, &mods, &code) {
             k_updater.set_event(KeyEvent::OpenMenu);
         } else if matches(&keybinds.close_menu, &mods, &code) {
             k_updater.set_event(KeyEvent::CloseMenu);
+        } else if matches(&keybinds.jump_next, &mods, &code) {
+            k_updater.set_event(KeyEvent::JumpNext)
+        } else if matches(&keybinds.jump_prev, &mods, &code) {
+            k_updater.set_event(KeyEvent::JumpPrev)
         }
     };
 

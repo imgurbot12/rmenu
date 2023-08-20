@@ -155,6 +155,12 @@ struct OptionArgs {
     /// Override Close-Menu Keybinds
     #[arg(short = 'c', long)]
     pub key_close_menu: Option<Vec<String>>,
+    /// Override Jump-Next Keybinds
+    #[arg(short = 'j', long)]
+    pub key_jump_next: Option<Vec<String>>,
+    /// Override Jump-Previous Keybinds
+    #[arg(short = 'J', long)]
+    pub key_jump_prev: Option<Vec<String>>,
     // window settings
     /// Override Window Title
     #[arg(short, long)]
@@ -187,6 +193,8 @@ impl Into<Options> for OptionArgs {
             key_move_prev: self.key_move_prev,
             key_open_menu: self.key_open_menu,
             key_close_menu: self.key_close_menu,
+            key_jump_next: self.key_jump_next,
+            key_jump_prev: self.key_jump_prev,
             title: self.title,
             decorate: self.deocorate,
             fullscreen: self.fullscreen,

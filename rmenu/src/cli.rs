@@ -117,6 +117,12 @@ pub struct Args {
     /// Override close-menu keybind
     #[arg(long)]
     key_close_menu: Option<Vec<Keybind>>,
+    /// Override jump-next keybind
+    #[arg(long)]
+    key_jump_next: Option<Vec<Keybind>>,
+    /// Override jump-previous keybind
+    #[arg(long)]
+    key_jump_prev: Option<Vec<Keybind>>,
 
     //window settings
     /// Override Window Title
@@ -240,6 +246,8 @@ impl Args {
         cli_replace!(config.keybinds.move_prev, self.key_move_prev, true);
         cli_replace!(config.keybinds.open_menu, self.key_open_menu, true);
         cli_replace!(config.keybinds.close_menu, self.key_close_menu, true);
+        cli_replace!(config.keybinds.jump_next, self.key_jump_next, true);
+        cli_replace!(config.keybinds.jump_prev, self.key_jump_prev, true);
         // override window settings
         cli_replace!(config.window.title, self.title, true);
         cli_replace!(config.window.size.width, self.width, true);
@@ -307,6 +315,8 @@ impl Args {
                             cli_keybind!(c.keybinds.move_prev, options.key_move_prev);
                             cli_keybind!(c.keybinds.open_menu, options.key_open_menu);
                             cli_keybind!(c.keybinds.close_menu, options.key_close_menu);
+                            cli_keybind!(c.keybinds.jump_next, options.key_jump_next);
+                            cli_keybind!(c.keybinds.jump_prev, options.key_jump_prev);
                             // window settings
                             cli_replace!(c.window.title, options.title, true);
                             cli_replace!(c.window.decorate, options.decorate, true);
@@ -362,7 +372,7 @@ impl Args {
             let main = args
                 .get(0)
                 .ok_or_else(|| RMenuError::InvalidPlugin(name.to_owned()))?;
-            // spawn command and handle command entries
+            // spawn command
             let mut command = Command::new(main)
                 .args(&args[1..])
                 .stdout(Stdio::piped())
@@ -371,8 +381,10 @@ impl Args {
                 .stdout
                 .as_mut()
                 .ok_or_else(|| RMenuError::CommandError(None))?;
+            // parse and read entries into vector of results
             let reader = BufReader::new(stdout);
-            self.read_entries(reader, &mut entries, config)?;
+            let mut entry = vec![];
+            self.read_entries(reader, &mut entry, config)?;
             let status = command.wait()?;
             if !status.success() {
                 return Err(RMenuError::CommandError(Some(status)));
@@ -381,10 +393,12 @@ impl Args {
             if config.search.placeholder.is_none() {
                 config.search.placeholder = plugin.placeholder.clone();
             }
-            match crate::cache::write_cache(&name, &plugin, &entries) {
+            match crate::cache::write_cache(&name, &plugin, &entry) {
                 Ok(_) => {}
                 Err(err) => log::error!("cache write error: {err:?}"),
             }
+            // write collected entries to main output
+            entries.append(&mut entry);
         }
         Ok(entries)
     }

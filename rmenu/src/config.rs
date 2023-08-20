@@ -87,6 +87,8 @@ pub struct KeyConfig {
     pub move_prev: Vec<Keybind>,
     pub open_menu: Vec<Keybind>,
     pub close_menu: Vec<Keybind>,
+    pub jump_next: Vec<Keybind>,
+    pub jump_prev: Vec<Keybind>,
 }
 
 impl Default for KeyConfig {
@@ -98,6 +100,8 @@ impl Default for KeyConfig {
             move_prev: vec![Keybind::new(Code::ArrowDown)],
             open_menu: vec![],
             close_menu: vec![],
+            jump_next: vec![Keybind::new(Code::PageDown)],
+            jump_prev: vec![Keybind::new(Code::PageUp)],
         };
     }
 }
@@ -236,6 +240,7 @@ impl Default for SearchConfig {
 pub struct Config {
     pub page_size: usize,
     pub page_load: f64,
+    pub jump_dist: usize,
     #[serde(default = "_true")]
     pub use_icons: bool,
     #[serde(default = "_true")]
@@ -252,6 +257,7 @@ impl Default for Config {
         Self {
             page_size: 50,
             page_load: 0.8,
+            jump_dist: 5,
             use_icons: true,
             use_comments: true,
             search: Default::default(),

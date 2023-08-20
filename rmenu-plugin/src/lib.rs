@@ -110,6 +110,10 @@ pub struct Options {
     pub key_open_menu: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_close_menu: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_jump_next: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_jump_prev: Option<Vec<String>>,
     // window settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
