@@ -54,12 +54,12 @@ pub struct Args {
     /// Override default configuration path
     #[arg(short, long)]
     config: Option<String>,
-    /// Override base css styling
+    /// Override base css theme styling
     #[arg(long, default_value_t=String::from(DEFAULT_CSS))]
-    css: String,
-    /// Include additional css settings for themeing
+    theme: String,
+    /// Include additional css settings
     #[arg(long)]
-    theme: Option<String>,
+    css: Option<String>,
 
     // root config settings
     /// Override terminal command
@@ -254,9 +254,9 @@ impl Args {
         config
     }
 
-    /// Load CSS or Default
-    pub fn get_css(&self) -> String {
-        let path = shellexpand::tilde(&self.css).to_string();
+    /// Load CSS Theme or Default
+    pub fn get_theme(&self) -> String {
+        let path = shellexpand::tilde(&self.theme).to_string();
         match read_to_string(&path) {
             Ok(css) => css,
             Err(err) => {
@@ -266,10 +266,10 @@ impl Args {
         }
     }
 
-    /// Load CSS Theme or Default
-    pub fn get_theme(&self) -> String {
-        if let Some(theme) = self.theme.as_ref() {
-            let path = shellexpand::tilde(&theme).to_string();
+    /// Load Additional CSS or Default
+    pub fn get_css(&self) -> String {
+        if let Some(css) = self.css.as_ref() {
+            let path = shellexpand::tilde(&css).to_string();
             match read_to_string(&path) {
                 Ok(theme) => return theme,
                 Err(err) => log::error!("Failed to load Theme: {err:?}"),
@@ -293,7 +293,7 @@ impl Args {
                         Message::Entry(entry) => v.push(entry),
                         Message::Options(options) => {
                             // base settings
-                            self.theme = self.theme.clone().or(options.theme);
+                            self.css = self.css.clone().or(options.css);
                             // search settings
                             cli_replace!(c.search.placeholder, options.placeholder);
                             cli_replace!(c.search.restrict, options.search_restrict);

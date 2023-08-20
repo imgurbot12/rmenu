@@ -241,8 +241,8 @@ fn App<'a>(cx: Scope<App>) -> Element {
     // complete final rendering
     cx.render(rsx! {
         style { DEFAULT_CSS_CONTENT }
-        style { "{cx.props.css}" }
         style { "{cx.props.theme}" }
+        style { "{cx.props.css}" }
         div {
             id: "content",
             class: "content",

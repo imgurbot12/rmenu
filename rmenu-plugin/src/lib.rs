@@ -87,7 +87,7 @@ impl Entry {
 pub struct Options {
     // base settings
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub theme: Option<String>,
+    pub css: Option<String>,
     // search settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placeholder: Option<String>,

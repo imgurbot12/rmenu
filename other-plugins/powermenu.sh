@@ -1,13 +1,13 @@
 #!/bin/sh
 
+CSS=`realpath "$(dirname $0)/css/powermenu.css"`
 SELF=`realpath $0`
-THEME=`realpath "$(dirname $0)/themes/powermenu.css"`
 RMENU=${RMENU:-"rmenu"}
 
 #: desc => generate options for basic operation
 main_options() {
   rmenu-build options \
-  -t $THEME \
+  -C $CSS \
   -n ArrowRight -p ArrowLeft \
   -w 550 -h 150 -M 0
 }
@@ -15,7 +15,7 @@ main_options() {
 #: desc => generate options for confirm operation
 confirm_options() {
   rmenu-build options \
-  -t $THEME \
+  -C $CSS \
   -n ArrowRight -p ArrowLeft \
   -w 300 -h 150 -M 0
 }

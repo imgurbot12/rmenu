@@ -121,8 +121,8 @@ impl Into<Entry> for EntryArgs {
 #[derive(Debug, Args)]
 struct OptionArgs {
     /// Override Applicaiton Theme
-    #[arg(short, long)]
-    pub theme: Option<String>,
+    #[arg(short = 'C', long)]
+    pub css: Option<String>,
     // search settings
     /// Override Default Placeholder
     #[arg(short = 'P', long)]
@@ -176,7 +176,7 @@ struct OptionArgs {
 impl Into<Options> for OptionArgs {
     fn into(self) -> Options {
         Options {
-            theme: self.theme,
+            css: self.css,
             placeholder: self.placeholder,
             search_restrict: self.search_restrict,
             search_min_length: self.search_min_length,

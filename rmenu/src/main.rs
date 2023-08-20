@@ -20,9 +20,9 @@ static DEFAULT_CSS_CONTENT: &'static str = include_str!("../public/default.css")
 pub struct App {
     css: String,
     name: String,
+    theme: String,
     entries: Vec<Entry>,
     config: config::Config,
-    theme: String,
 }
 
 //TODO: how should scripting work?
@@ -66,9 +66,9 @@ fn main() -> cli::Result<()> {
     gui::run(App {
         name: "rmenu".to_owned(),
         css,
+        theme,
         entries,
         config,
-        theme,
     });
 
     Ok(())
