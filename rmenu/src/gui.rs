@@ -63,10 +63,8 @@ fn render_image<'a, T>(
             return cx.render(rsx! { img { class: "image", src: "{img}" } });
         }
     }
-    if let Some(alt) = alt {
-        return cx.render(rsx! { div { class: "icon_alt", dangerous_inner_html: "{alt}" } });
-    }
-    None
+    let alt = alt.map(|s| s.as_str()).unwrap_or_else(|| "?");
+    return cx.render(rsx! { div { class: "icon_alt", dangerous_inner_html: "{alt}" } });
 }
 
 /// render a single result entry w/ the given information
