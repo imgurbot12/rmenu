@@ -4,11 +4,20 @@ SELF=`realpath $0`
 THEME=`realpath "$(dirname $0)/themes/powermenu.css"`
 RMENU=${RMENU:-"rmenu"}
 
-options() {
+#: desc => generate options for basic operation
+main_options() {
   rmenu-build options \
   -t $THEME \
   -n ArrowRight -p ArrowLeft \
   -w 550 -h 150 -M 0
+}
+
+#: desc => generate options for confirm operation
+confirm_options() {
+  rmenu-build options \
+  -t $THEME \
+  -n ArrowRight -p ArrowLeft \
+  -w 300 -h 150 -M 0
 }
 
 #: desc => generate confirmation entries
@@ -16,7 +25,7 @@ options() {
 confirm() {
   cmd=$1
   name="${2:-"Confirm"}"
-  options
+  confirm_options
   rmenu-build entry -n "Cancel" -I "" -a "`rmenu-build action -m echo "$name Cancelled"`"
   rmenu-build entry -n "$name" -I "" -a "`rmenu-build action "$cmd"`"
 }
@@ -46,13 +55,8 @@ action() {
 }
 
 case "$1" in
-  "list")
-    confirm="$2"
-    options
-    action "⏻" "Shutdown" "systemctl poweroff" "$2"
-    action "" "Reboot"   "systemctl reboot"   "$2"
-    action "⏾" "Suspend"  "systemctl suspend"  "$2"
-    action "" "Log Out"  "sway exit"          "$2"
+  "help")
+    echo "usage: $0 <args...>" && exit 1
     ;;
   "confirm")
     name=`echo $2 | cut -d ':' -f1`
@@ -60,6 +64,11 @@ case "$1" in
     confirm "$action" "$name" | $RMENU
     ;;
   *)
-    echo "usage: $0 <list|confirm> <args...>" && exit 1
+    [ "$1" != "--no-confirm" ] && confirm="Y"
+    main_options
+    action "⏻" "Shutdown" "systemctl poweroff" "$confirm"
+    action "" "Reboot"   "systemctl reboot"   "$confirm"
+    action "⏾" "Suspend"  "systemctl suspend"  "$confirm"
+    action "" "Log Out"  "sway exit"          "$confirm"
     ;;
 esac

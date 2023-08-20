@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 get_sinks() {
   sinks=`pactl list sinks | grep -e 'Sink' -e 'Name' -e 'Description' | nl -s '>'`

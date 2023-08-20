@@ -34,11 +34,11 @@ plugins:
     cache: false
     placeholder: "Jump to the Specified Window"
   audio:
-    exec:  ["sh", "~/.config/rmenu/pactl-audio.sh"]
+    exec:  ["~/.config/rmenu/pactl-audio.sh"]
     cache: false
     placeholder: "Select an Audio Sink"
   powermenu:
-    exec: ["sh", "~/.config/rmenu/powermenu.sh", "list", "confirm"]
+    exec: ["~/.config/rmenu/powermenu.sh"]
     cache: false
 
 # custom keybindings
