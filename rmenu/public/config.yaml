@@ -27,6 +27,7 @@ plugins:
     cache: onlogin
     options:
       css: ~/.config/rmenu/themes/launchpad.css
+      page_size: 500
       transparent: true
       window_width: 1200
       window_height: 800

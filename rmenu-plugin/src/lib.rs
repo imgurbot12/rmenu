@@ -88,6 +88,12 @@ pub struct Options {
     // base settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub css: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page_size: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page_load: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub jump_dist: Option<usize>,
     // search settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placeholder: Option<String>,

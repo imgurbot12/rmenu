@@ -307,6 +307,9 @@ impl Config {
     /// Update Configuration from Options Object
     pub fn update(&mut self, options: &Options) -> Result<(), String> {
         cfg_replace!(self.css, options.css);
+        cfg_replace!(self.page_size, options.page_size, true);
+        cfg_replace!(self.page_load, options.page_load, true);
+        cfg_replace!(self.jump_dist, options.jump_dist, true);
         // search settings
         cfg_replace!(self.search.placeholder, options.placeholder);
         cfg_replace!(self.search.restrict, options.search_restrict);

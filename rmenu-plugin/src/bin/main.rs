@@ -123,6 +123,12 @@ struct OptionArgs {
     /// Override Applicaiton Theme
     #[arg(short = 'C', long)]
     pub css: Option<String>,
+    #[arg(short = 's', long)]
+    pub page_size: Option<usize>,
+    #[arg(short = 'l', long)]
+    pub page_load: Option<f64>,
+    #[arg(short = 'd', long)]
+    pub jump_dist: Option<usize>,
     // search settings
     /// Override Default Placeholder
     #[arg(short = 'P', long)]
@@ -186,6 +192,9 @@ impl Into<Options> for OptionArgs {
     fn into(self) -> Options {
         Options {
             css: self.css,
+            page_size: self.page_size,
+            page_load: self.page_load,
+            jump_dist: self.jump_dist,
             placeholder: self.placeholder,
             search_restrict: self.search_restrict,
             search_min_length: self.search_min_length,
