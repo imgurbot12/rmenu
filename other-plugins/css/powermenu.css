@@ -1,0 +1,28 @@
+
+.navbar {
+  width: 0;
+  height: 0;
+}
+
+.results {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  font-size: 30px;
+  width: 10rem;
+}
+
+.icon {
+  width: 100%;
+  font-size: 6rem;
+}
+
+.entry {
+  font-size: 1rem;
+}

@@ -1,5 +1,3 @@
-use glib::translate::FromGlib;
-
 use async_std::task;
 use futures_channel::oneshot;
 use std::cell::RefCell;
@@ -8,6 +6,9 @@ use std::rc::Rc;
 use std::time::{Duration, SystemTime};
 
 use anyhow::{anyhow, Context, Result};
+use glib::translate::FromGlib;
+use glib::Variant;
+use nm::traits::ObjectExt;
 use nm::*;
 
 static SCAN_INTERVAL_MS: u64 = 500;
@@ -32,6 +33,7 @@ pub struct AccessPoint {
     pub security: String,
     pub is_active: bool,
     pub connection: Option<Connection>,
+    pub dbus_path: Option<String>,
 }
 
 // SETTING_WIRELESS_MODE
@@ -226,6 +228,7 @@ impl Manager {
         let active = self.wifi.active_access_point();
         for a in self.wifi.access_points() {
             // retrieve access-point information
+            let path = a.path();
             let rate = a.max_bitrate() / 1000;
             let signal = a.strength();
             let ssid = a
@@ -271,6 +274,7 @@ impl Manager {
                     is_active,
                     security: security.join(" ").to_owned(),
                     connection: a.filter_connections(&conns).get(0).cloned(),
+                    dbus_path: path.map(|s| s.to_string()),
                 },
             );
         }
@@ -295,10 +299,21 @@ impl Manager {
                 wait_conn(&active_conn, self.timeout).await?;
             }
             None => {
+                // generate options
+                let mut options: BTreeMap<String, Variant> = BTreeMap::new();
+                options.insert("persist".to_string(), "disk".to_variant());
+                options.insert("bind-activation".to_string(), "none".to_variant());
+                // complete connection
+                let glib_opts = options.to_variant();
                 let conn = new_conn(ap, password)?;
-                let active_conn = self
+                let (active_conn, _) = self
                     .client
-                    .add_and_activate_connection_future(Some(&conn), Some(&device), None)
+                    .add_and_activate_connection2_future(
+                        Some(&conn),
+                        Some(&device),
+                        ap.dbus_path.as_deref(),
+                        &glib_opts,
+                    )
                     .await
                     .context("Failed to add and activate connection")?;
                 wait_conn(&active_conn, self.timeout).await?;

@@ -1,0 +1,86 @@
+* {
+	font-family: monospace;
+  color: #f5f5f5;
+	background-color: transparent;
+}
+
+:root {
+  --bg1:  #363636;
+  --bg2:  #f5f5f520;
+  --bg3:  #f5f5f540;
+  --bg4:  #0860f2E6;
+
+  --fg0:  #f5f5f5;
+  --fg1:  #f5f5f580;
+}
+
+html, body {
+  background-color: #24242480;
+}
+
+input {
+  width: 33.333%;
+  height: 1.5rem;
+  margin-left: 33.333%;
+
+  border: 1px;
+  border-color:  #f5f5f540;
+  border-radius: 2px;
+  background-color: #363636;
+}
+
+input::placeholder {
+  color: #f5f5f520;
+}
+
+.navbar {
+  top: 0.5rem;
+}
+
+.results {
+  margin: 5vh;
+  height: 90vh;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.result-entry {
+  display: flex;
+  flex-basis: 20%;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent !important;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  font-size: 30px;
+  width: 10rem;
+  padding: 0.5rem;
+ 
+  border-radius:  16px;
+  border-color: transparent;
+}
+
+.icon {
+  width: 100%;
+  font-size: 6rem;
+}
+
+.name,
+.entry {
+  width: 100%;
+  font-size: 1rem;
+  text-align: center;
+}
+
+.comment {
+  display: none;
+}
+
+.selected {
+  background-color: #0860f2E6;
+}

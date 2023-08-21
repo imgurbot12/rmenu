@@ -1,4 +1,5 @@
 use dioxus::prelude::{use_eval, use_ref, Scope, UseRef};
+use regex::Regex;
 use rmenu_plugin::Entry;
 
 use crate::config::Config;
@@ -17,10 +18,12 @@ fn scroll<T>(cx: Scope<T>, pos: usize) {
 pub enum KeyEvent {
     Exec,
     Exit,
-    ShiftUp,
-    ShiftDown,
+    MovePrev,
+    MoveNext,
     OpenMenu,
     CloseMenu,
+    JumpNext,
+    JumpPrev,
 }
 
 pub struct InnerState {
@@ -29,6 +32,7 @@ pub struct InnerState {
     page: usize,
     search: String,
     event: Option<KeyEvent>,
+    search_regex: Option<Regex>,
 }
 
 impl InnerState {
@@ -44,8 +48,20 @@ impl InnerState {
         self.pos = std::cmp::min(self.pos + x, max - 1)
     }
 
+    /// Jump a spefified number of results upwards
+    #[inline]
+    pub fn jump_up(&mut self, jump: usize) {
+        self.move_up(jump)
+    }
+
+    /// Jump a specified number of results downwards
+    pub fn jump_down(&mut self, jump: usize, results: &Vec<&Entry>) {
+        let max = std::cmp::max(results.len(), 1);
+        self.move_down(jump, max);
+    }
+
     /// Move Up Once With Context of SubMenu
-    pub fn shift_up(&mut self) {
+    pub fn move_prev(&mut self) {
         if self.subpos > 0 {
             self.subpos -= 1;
             return;
@@ -54,15 +70,14 @@ impl InnerState {
     }
 
     /// Move Down Once With Context of SubMenu
-    pub fn shift_down(&mut self, results: &Vec<&Entry>) {
+    pub fn move_next(&mut self, results: &Vec<&Entry>) {
         if let Some(result) = results.get(self.pos) {
             if self.subpos > 0 && self.subpos < result.actions.len() - 1 {
                 self.subpos += 1;
                 return;
             }
         }
-        let max = std::cmp::max(results.len(), 1);
-        self.move_down(1, max);
+        self.jump_down(1, results)
     }
 }
 
@@ -83,6 +98,21 @@ impl<'a> AppState<'a> {
                 page: 0,
                 search: "".to_string(),
                 event: None,
+                search_regex: app.config.search.restrict.clone().and_then(|mut r| {
+                    if !r.starts_with('^') {
+                        r = format!("^{r}")
+                    };
+                    if !r.ends_with('$') {
+                        r = format!("{r}$")
+                    };
+                    match Regex::new(&r) {
+                        Ok(regex) => Some(regex),
+                        Err(err) => {
+                            log::error!("Invalid Regex Expression: {:?}", err);
+                            None
+                        }
+                    }
+                }),
             }),
             app,
             results: vec![],
@@ -147,13 +177,22 @@ impl<'a> AppState<'a> {
                     KeyEvent::Exec => self.execute(),
                     KeyEvent::OpenMenu => self.open_menu(),
                     KeyEvent::CloseMenu => self.close_menu(),
-                    KeyEvent::ShiftUp => {
-                        self.shift_up();
+                    KeyEvent::MovePrev => {
+                        self.move_prev();
                         let pos = self.position().0;
                         scroll(cx, if pos <= 3 { pos } else { pos + 3 })
                     }
-                    KeyEvent::ShiftDown => {
-                        self.shift_down();
+                    KeyEvent::MoveNext => {
+                        self.move_next();
+                        scroll(cx, self.position().0 + 3)
+                    }
+                    KeyEvent::JumpPrev => {
+                        self.jump_prev();
+                        let pos = self.position().0;
+                        scroll(cx, if pos <= 3 { pos } else { pos + 3 })
+                    }
+                    KeyEvent::JumpNext => {
+                        self.jump_next();
                         scroll(cx, self.position().0 + 3)
                     }
                 };
@@ -184,6 +223,27 @@ impl<'a> AppState<'a> {
 
     /// Update Search and Reset Position
     pub fn set_search(&self, cx: Scope<'_, App>, search: String) {
+        // confirm search meets required criteria
+        if let Some(min) = self.app.config.search.min_length.as_ref() {
+            if search.len() < *min {
+                return;
+            }
+        }
+        if let Some(min) = self.app.config.search.min_length.as_ref() {
+            if search.len() < *min {
+                return;
+            }
+        }
+        let is_match = self.state.with(|s| {
+            s.search_regex
+                .as_ref()
+                .map(|r| r.is_match(&search))
+                .unwrap_or(true)
+        });
+        if !is_match {
+            return;
+        }
+        // update search w/ new content
         self.state.with_mut(|s| {
             s.pos = 0;
             s.subpos = 0;
@@ -227,13 +287,28 @@ impl<'a> AppState<'a> {
 
     /// Move Up Once With Context of SubMenu
     #[inline]
-    pub fn shift_up(&self) {
-        self.state.with_mut(|s| s.shift_up());
+    pub fn move_prev(&self) {
+        self.state.with_mut(|s| s.move_prev());
     }
 
     /// Move Down Once With Context of SubMenu
     #[inline]
-    pub fn shift_down(&self) {
-        self.state.with_mut(|s| s.shift_down(&self.results))
+    pub fn move_next(&self) {
+        self.state.with_mut(|s| s.move_next(&self.results))
+    }
+
+    /// Jump a Configured Distance Up the Results
+    #[inline]
+    pub fn jump_prev(&self) {
+        let distance = self.app.config.jump_dist;
+        self.state.with_mut(|s| s.jump_up(distance))
+    }
+
+    /// Jump a Configured Distance Down the Results
+    #[inline]
+    pub fn jump_next(&self) {
+        let distance = self.app.config.jump_dist;
+        self.state
+            .with_mut(|s| s.jump_down(distance, &self.results))
     }
 }

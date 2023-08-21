@@ -8,9 +8,9 @@ use crate::config::Config;
 /// Configurtaion Settings and Search-String
 pub fn new_searchfn(cfg: &Config, search: &str) -> Box<dyn Fn(&Entry) -> bool> {
     // build regex search expression
-    if cfg.search_regex {
+    if cfg.search.use_regex {
         let rgx = RegexBuilder::new(search)
-            .case_insensitive(cfg.ignore_case)
+            .case_insensitive(cfg.search.ignore_case)
             .build();
         let Ok(regex) = rgx else {
             return Box::new(|_| false);
@@ -26,7 +26,7 @@ pub fn new_searchfn(cfg: &Config, search: &str) -> Box<dyn Fn(&Entry) -> bool> {
         });
     }
     // build case-insensitive search expression
-    if cfg.ignore_case {
+    if cfg.search.ignore_case {
         let matchstr = search.to_lowercase();
         return Box::new(move |entry: &Entry| {
             if entry.name.to_lowercase().contains(&matchstr) {

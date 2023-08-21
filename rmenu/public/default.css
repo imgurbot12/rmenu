@@ -8,6 +8,12 @@ body > div {
   overflow: hidden;
 }
 
+html,
+body,
+.content {
+  margin: 0;
+}
+
 .navbar {
   top: 0;
   left: 0;
@@ -28,8 +34,12 @@ body > div {
 
 /* Navigation */
 
+#search:invalid {
+  border: 1px solid red;
+}
+
 input {
-  width: 100%;
+  width: -webkit-fill-available;
   height: 5vw;
   border: none;
   outline: none;
@@ -49,24 +59,24 @@ input {
   margin: 2px 5px;
 }
 
-.result > .icon {
+.icon {
   width: 4%;
   overflow: hidden;
   display: flex;
   justify-content: center;
 }
 
-.result > .icon > img {
+img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.result > .name {
+.name {
   width: 30%;
 }
 
-.result > .comment {
+.comment {
   flex: 1;
 }
 

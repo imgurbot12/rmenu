@@ -25,10 +25,16 @@ plugins:
   drun: 
     exec:  ["~/.config/rmenu/rmenu-desktop"]
     cache: onlogin
-  audio:
-    exec:  ["~/.config/rmenu/rmenu-audio"]
-    cache: false
-    placeholder: "Select an Audio Sink"
+    options:
+      css: ~/.config/rmenu/themes/launchpad.css
+      page_size: 500
+      transparent: true
+      window_width: 1200
+      window_height: 800
+      key_move_prev: ["Arrow-Left"]
+      key_move_next: ["Arrow-Right"]
+      key_jump_prev: ["Arrow-Up"]
+      key_jump_next: ["Arrow-Down"]
   network:
     exec:  ["~/.config/rmenu/rmenu-network"]
     cache: false
@@ -37,12 +43,21 @@ plugins:
     exec:  ["~/.config/rmenu/rmenu-window"]
     cache: false
     placeholder: "Jump to the Specified Window"
+  audio:
+    exec:  ["~/.config/rmenu/pactl-audio.sh"]
+    cache: false
+    placeholder: "Select an Audio Sink"
+  powermenu:
+    exec: ["~/.config/rmenu/powermenu.sh"]
+    cache: false
 
 # custom keybindings
 keybinds:
   exec:       ["Enter"]
   exit:       ["Escape"]
-  move_up:    ["Arrow-Up", "Shift+Tab"]
-  move_down:  ["Arrow-Down", "Tab"]
+  move_next:  ["Arrow-Down", "Tab"]
+  move_prev:  ["Arrow-Up", "Shift+Tab"]
+  jump_next:  ["Page-Down"]
+  jump_prev:  ["Page-Up"]
   open_menu:  ["Arrow-Right"]
   close_menu: ["Arrow-Left"]

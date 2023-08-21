@@ -79,6 +79,7 @@ fn parse_desktop(path: &PathBuf, locale: Option<&str>) -> Option<Entry> {
         actions,
         comment,
         icon,
+        icon_alt: None,
     })
 }
 
