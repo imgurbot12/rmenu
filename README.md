@@ -74,3 +74,6 @@ or move the css file to `$HOME/.config/rmenu/style.css`
 
 #### Solarized
 ![solzarized](./screenshots/solarized.png)
+
+#### PowerMenu
+![powermenu](./screenshots/powermenu.png)
