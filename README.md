@@ -1,6 +1,12 @@
 RMenu
 ------
 
+<!--
+ TODO: improve documentation:
+  2. explain exchange format and rmenu-build tool
+  3. include more examples including fullscreen/transparent app-window
+-->
+
 Another customizable Application-Launcher written in Rust
 
 ### Features
@@ -19,7 +25,7 @@ $ make install
 
 ### Usage
 
-RMenu Comes with Two Bultin Plugins: "Desktop Run" aka `drun`. 
+RMenu Comes with Two Builtin Plugins: "Desktop Run" aka `drun`. 
 
 ```bash
 $ rmenu -r run
@@ -55,4 +61,16 @@ Customize the entire app's appearance with CSS. A few [Example Themes](./themes/
 are available as reference. To try them out use: `rmenu --css <my-css-theme>`
 or move the css file to `$HOME/.config/rmenu/style.css`
 
+### Example Screenshots
 
+#### Launchpad
+![launchpad](./screenshots/launchpad.png)
+
+#### Nord
+![nord](./screenshots/nord.png)
+
+#### Dark
+![dark](./screenshots/dark.png)
+
+#### Solarized
+![solzarized](./screenshots/solarized.png)
