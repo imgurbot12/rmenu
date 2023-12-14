@@ -252,7 +252,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            page_size: 200,
+            page_size: 50,
             page_load: 0.8,
             jump_dist: 5,
             use_icons: true,

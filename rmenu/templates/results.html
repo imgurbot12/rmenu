@@ -1,4 +1,4 @@
-{%- for i in start..end %}
+{%- for i in start..=end %}
 {% let entry = results[i] %}
 <div class="result-entry">
   <div 
@@ -7,7 +7,19 @@
     onclick="sclick(this.id)"
     ondblclick="dclick(this.id)">
     {%-if config.use_icons %}
-    <div class="icon"></div>
+    <div class="icon">
+      {%- if let Some(icon) = cache.locate(entry.icon) %}
+      <img class="image" src="data:image/png;base64,{{ icon }}" alt="?">
+      {%else%}
+      <div class="icon_alt">
+        {%- if let Some(alt) = entry.icon_alt %}
+          {{ alt|safe }}
+        {%else%}
+          ?
+        {%endif %}
+      </div>
+      {%endif%}
+    </div>
     {%endif%}
     {%-if config.use_comments %}
     <div class="name">{{ entry.name|safe }}</div>

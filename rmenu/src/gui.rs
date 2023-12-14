@@ -9,6 +9,7 @@ use web_view::*;
 
 use crate::config::{Config, Keybind};
 use crate::exec::execute;
+use crate::icons::IconCache;
 use crate::search::build_searchfn;
 use crate::AppData;
 
@@ -77,6 +78,7 @@ struct ResultsTemplate<'a> {
     end: usize,
     results: &'a Vec<&'a Entry>,
     config: &'a Config,
+    cache: &'a IconCache,
 }
 
 #[derive(Debug)]
@@ -87,6 +89,7 @@ struct AppState<'a> {
     search: String,
     results: Vec<&'a Entry>,
     data: &'a AppData,
+    icons: IconCache,
 }
 
 /// check if the current inputs match any of the given keybindings
@@ -103,23 +106,30 @@ impl<'a> AppState<'a> {
             page: 0,
             search: "".to_owned(),
             results: vec![],
+            icons: IconCache::new().unwrap(),
             data,
         }
     }
 
     /// Render Current Page of Results
-    fn render_results_page(&self) -> String {
+    fn render_results_page(&mut self) -> String {
         let size = self.data.config.page_size;
         let start = self.page * size;
         let max = (self.page + 1) * size;
-        let nresults = std::cmp::max(self.results.len(), 1);
-        let end = std::cmp::min(max, nresults - 1);
+        let min = std::cmp::min(max, self.results.len());
+        let end = std::cmp::max(min, 1) - 1;
+        self.icons.prepare(&self.results[..]);
+        // skip generation if results are empty
+        if self.results.is_empty() {
+            return "".to_owned();
+        }
         // generate results html from template
         let template = ResultsTemplate {
             start,
             end,
             config: &self.data.config,
             results: &self.results,
+            cache: &self.icons,
         };
         template.render().unwrap()
     }
@@ -172,7 +182,8 @@ impl<'a> AppState<'a> {
     #[inline]
     fn move_down(&mut self, down: usize) -> Option<String> {
         let max = (self.page + 1) * self.data.config.page_size;
-        let end = std::cmp::min(max, self.results.len()) - 1;
+        let n = std::cmp::max(self.results.len(), 1);
+        let end = std::cmp::min(max, n) - 1;
         self.pos = std::cmp::min(self.pos + down, end);
         match self.append_results(false) {
             Some(operation) => Some(operation),

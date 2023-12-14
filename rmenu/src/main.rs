@@ -3,6 +3,7 @@ mod cli;
 mod config;
 mod exec;
 mod gui;
+mod icons;
 mod search;
 
 use clap::Parser;
@@ -47,6 +48,15 @@ fn main() -> cli::Result<()> {
         "run".to_owned(),
         PluginConfig {
             exec: vec!["/home/andrew/.config/rmenu/rmenu-run".to_owned()],
+            cache: CacheSetting::OnLogin,
+            placeholder: None,
+            options: None,
+        },
+    );
+    config.plugins.insert(
+        "drun".to_owned(),
+        PluginConfig {
+            exec: vec!["/home/andrew/.config/rmenu/rmenu-desktop".to_owned()],
             cache: CacheSetting::OnLogin,
             placeholder: None,
             options: None,
