@@ -70,6 +70,14 @@ function update(html) {
   setpos(0);
 }
 
+// Append Results HTML
+function append(pos, html, smooth = false) {
+  results.innerHTML += html;
+  if (pos != null && pos != undefined) {
+    setpos(pos, smooth);
+  }
+}
+
 /* Init */
 
 // start position at zero

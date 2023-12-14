@@ -1,4 +1,5 @@
-{%- for (i, entry) in results.iter().enumerate() %}
+{%- for i in start..end %}
+{% let entry = results[i] %}
 <div class="result-entry">
   <div 
     id="result-{{ i }}" 

@@ -73,6 +73,8 @@ struct IndexTemplate<'a> {
 #[derive(Template)]
 #[template(path = "results.html")]
 struct ResultsTemplate<'a> {
+    start: usize,
+    end: usize,
     results: &'a Vec<&'a Entry>,
     config: &'a Config,
 }
@@ -81,6 +83,7 @@ struct ResultsTemplate<'a> {
 struct AppState<'a> {
     pos: usize,
     subpos: usize,
+    page: usize,
     search: String,
     results: Vec<&'a Entry>,
     data: &'a AppData,
@@ -97,25 +100,38 @@ impl<'a> AppState<'a> {
         Self {
             pos: 0,
             subpos: 0,
+            page: 0,
             search: "".to_owned(),
             results: vec![],
             data,
         }
     }
 
-    /// Update AppState w/ new Search and Render HTML Results
-    fn search(&mut self, search: String) -> String {
-        // update search and calculate matching results
-        let sfn = build_searchfn(&self.data.config, &search);
-        self.pos = 0;
-        self.search = search;
-        self.results = self.data.entries.iter().filter(|e| sfn(e)).collect();
+    /// Render Current Page of Results
+    fn render_results_page(&self) -> String {
+        let size = self.data.config.page_size;
+        let start = self.page * size;
+        let max = (self.page + 1) * size;
+        let nresults = std::cmp::max(self.results.len(), 1);
+        let end = std::cmp::min(max, nresults - 1);
         // generate results html from template
         let template = ResultsTemplate {
+            start,
+            end,
             config: &self.data.config,
             results: &self.results,
         };
         template.render().unwrap()
+    }
+
+    /// Update AppState w/ new Search and Render HTML Results
+    fn search(&mut self, search: String) -> String {
+        let sfn = build_searchfn(&self.data.config, &search);
+        self.pos = 0;
+        self.page = 0;
+        self.search = search;
+        self.results = self.data.entries.iter().filter(|e| sfn(e)).collect();
+        self.render_results_page()
     }
 
     /// Execute Action associated w/ Current Position/Subposition
@@ -132,14 +148,36 @@ impl<'a> AppState<'a> {
         execute(action, self.data.config.terminal.clone());
     }
 
-    #[inline]
-    fn move_up(&mut self, up: usize) {
-        self.pos = std::cmp::max(self.pos, up) - up;
+    /// Return Additional Page Results to Load (when nessesary)
+    fn append_results(&mut self, smooth: bool) -> Option<String> {
+        let pos = self.pos as f64;
+        let size = self.data.config.page_size as f64;
+        let pages = pos / size;
+        let ratio = (pos % size) / size;
+        if pages > self.page as f64 && ratio > self.data.config.page_load {
+            println!("loading next page!");
+            self.page += 1;
+            let results = self.render_results_page();
+            return Some(format!("append({}, {results:?}, {smooth})", self.pos));
+        }
+        None
     }
 
     #[inline]
-    fn move_down(&mut self, down: usize) {
-        self.pos = std::cmp::min(self.pos + down, self.results.len() - 1);
+    fn move_up(&mut self, up: usize) -> Option<String> {
+        self.pos = std::cmp::max(self.pos, up) - up;
+        Some(format!("setpos({})", self.pos))
+    }
+
+    #[inline]
+    fn move_down(&mut self, down: usize) -> Option<String> {
+        let max = (self.page + 1) * self.data.config.page_size;
+        let end = std::cmp::min(max, self.results.len()) - 1;
+        self.pos = std::cmp::min(self.pos + down, end);
+        match self.append_results(false) {
+            Some(operation) => Some(operation),
+            None => Some(format!("setpos({})", self.pos)),
+        }
     }
 
     /// Handle Search Event sent by UI
@@ -148,8 +186,6 @@ impl<'a> AppState<'a> {
         Some(format!("update({results:?})"))
     }
 
-    //TODO: need to increase page-size as cursor moves down
-    //TODO: add loading on scroll as well
     //TODO: add submenu access and selection
     //TODO: put back main to reference actual config
     //TODO: update sway config to make borderless
@@ -165,11 +201,9 @@ impl<'a> AppState<'a> {
         } else if matches(&keybinds.exit, &mods, &code) {
             std::process::exit(0);
         } else if matches(&keybinds.move_next, &mods, &code) {
-            self.move_down(1);
-            Some(format!("setpos({})", self.pos))
+            self.move_down(1)
         } else if matches(&keybinds.move_prev, &mods, &code) {
-            self.move_up(1);
-            Some(format!("setpos({})", self.pos))
+            self.move_up(1)
         } else if matches(&keybinds.open_menu, &mods, &code) {
             // k_updater.set_event(KeyEvent::OpenMenu);
             None
@@ -177,11 +211,9 @@ impl<'a> AppState<'a> {
             // k_updater.set_event(KeyEvent::CloseMenu);
             None
         } else if matches(&keybinds.jump_next, &mods, &code) {
-            self.move_down(self.data.config.jump_dist);
-            Some(format!("setpos({})", self.pos))
+            self.move_down(self.data.config.jump_dist)
         } else if matches(&keybinds.jump_prev, &mods, &code) {
-            self.move_up(self.data.config.jump_dist);
-            Some(format!("setpos({})", self.pos))
+            self.move_up(self.data.config.jump_dist)
         } else {
             None
         }
@@ -206,7 +238,10 @@ impl<'a> AppState<'a> {
                 if let Some((pos, subpos)) = self.parse_id_pos(&id) {
                     self.pos = pos;
                     self.subpos = subpos;
-                    return Some(format!("setpos({pos}, true)"));
+                    return match self.append_results(true) {
+                        Some(op) => Some(op),
+                        None => Some(format!("setpos({pos}, true)")),
+                    };
                 }
             }
             ClickEvent::Double { id } => {
@@ -222,7 +257,13 @@ impl<'a> AppState<'a> {
 
     /// Handle Scrolling Events sent by UI
     fn scroll_event(&mut self, event: ScrollEvent) -> Option<String> {
-        println!("scroll: {event:?}");
+        // load additonal results when scrolled near bottom
+        let ratio = event.y as f64 / event.maxy as f64;
+        if ratio >= self.data.config.page_load {
+            self.page += 1;
+            let results = self.render_results_page();
+            return Some(format!("append(null, {results:?})"));
+        }
         None
     }
 
