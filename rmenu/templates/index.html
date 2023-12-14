@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>RMenu Application Launcher</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>{{ css }}</style>
+</head>
+<body>
+  <div id="content" class="content">
+    <div id="navbar" class="navbar">
+      <input 
+        id="search" 
+        type="text" 
+        value="{{ search }}"
+        {% if let Some(v) = config.search.restrict %}pattern="{{ v }}"{% endif %}
+        {% if let Some(v) = config.search.min_length %}minlength="{{ v }}"{% endif %}
+        {% if let Some(v) = config.search.max_length %}maxlength="{{ v }}"{% endif %}
+        {% if let Some(v) = config.search.placeholder %}placeholder="{{ v }}"{% endif %}
+        oninput="search(this.value)">
+    </div>
+    <div id="results" class="results">
+      {{ results|safe }}
+    </div>
+  </div>
+  <script>{{ script|safe }}</script>
+</body>
+</html>

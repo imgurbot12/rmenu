@@ -1,168 +1,89 @@
-//! RMENU GUI Implementation using Dioxus
-#![allow(non_snake_case)]
-use std::fmt::Display;
+/// Gui Implementation
+use std::str::FromStr;
 
-use dioxus::prelude::*;
+use askama::Template;
 use keyboard_types::{Code, Modifiers};
 use rmenu_plugin::Entry;
+use serde::Deserialize;
+use web_view::*;
 
-use crate::config::Keybind;
-use crate::state::{AppState, KeyEvent};
-use crate::{App, DEFAULT_CSS_CONTENT};
+use crate::config::{Config, Keybind};
+use crate::exec::execute;
+use crate::search::build_searchfn;
+use crate::AppData;
 
-/// spawn and run the app on the configured platform
-pub fn run(app: App) {
-    let theme = match app.config.window.dark_mode {
-        Some(dark) => match dark {
-            true => Some(dioxus_desktop::tao::window::Theme::Dark),
-            false => Some(dioxus_desktop::tao::window::Theme::Light),
-        },
-        None => None,
-    };
-    let builder = dioxus_desktop::WindowBuilder::new()
-        .with_title(app.config.window.title.clone())
-        .with_inner_size(app.config.window.size)
-        .with_position(app.config.window.position)
-        .with_focused(app.config.window.focus)
-        .with_decorations(app.config.window.decorate)
-        .with_transparent(app.config.window.transparent)
-        .with_always_on_top(app.config.window.always_top)
-        .with_fullscreen(app.config.window.get_fullscreen())
-        .with_theme(theme);
-    let config = dioxus_desktop::Config::new().with_window(builder);
-    dioxus_desktop::launch_with_props(App, app, config);
+static INDEX_JS: &'static str = include_str!("../web/index.js");
+static INDEX_CSS: &'static str = include_str!("../web/index.css");
+
+#[derive(Debug, Deserialize)]
+struct KeyEvent {
+    key: String,
+    ctrl: bool,
+    shift: bool,
 }
 
-#[derive(PartialEq, Props)]
-struct GEntry<'a> {
+impl KeyEvent {
+    /// Convert Message into Keyboard Modifiers Object
+    fn modifiers(&self) -> Modifiers {
+        let mut modifiers = Modifiers::default();
+        if self.ctrl {
+            modifiers |= Modifiers::CONTROL;
+        }
+        if self.shift {
+            modifiers |= Modifiers::SHIFT;
+        }
+        modifiers
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "click_type")]
+#[serde(rename_all = "lowercase")]
+enum ClickEvent {
+    Single { id: String },
+    Double { id: String },
+}
+
+#[derive(Debug, Deserialize)]
+struct ScrollEvent {
+    y: usize,
+    maxy: usize,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(tag = "type")]
+#[serde(rename_all = "lowercase")]
+enum Message {
+    Search { value: String },
+    KeyDown(KeyEvent),
+    Click(ClickEvent),
+    Scroll(ScrollEvent),
+}
+
+#[derive(Template)]
+#[template(path = "index.html")]
+struct IndexTemplate<'a> {
+    css: &'a str,
+    search: &'a str,
+    results: &'a str,
+    config: &'a Config,
+    script: &'a str,
+}
+
+#[derive(Template)]
+#[template(path = "results.html")]
+struct ResultsTemplate<'a> {
+    results: &'a Vec<&'a Entry>,
+    config: &'a Config,
+}
+
+#[derive(Debug)]
+struct AppState<'a> {
     pos: usize,
     subpos: usize,
-    index: usize,
-    entry: &'a Entry,
-    state: AppState<'a>,
-}
-
-#[inline]
-fn render_comment(comment: Option<&String>) -> &str {
-    comment.map(|s| s.as_str()).unwrap_or("")
-}
-
-#[inline]
-fn render_image<'a, T>(
-    cx: Scope<'a, T>,
-    image: Option<&String>,
-    alt: Option<&String>,
-) -> Element<'a> {
-    if let Some(img) = image {
-        if img.ends_with(".svg") {
-            if let Some(content) = crate::image::convert_svg(img.to_owned()) {
-                return cx.render(rsx! { img { class: "image", src: "{content}" } });
-            }
-        }
-        if crate::image::image_exists(img.to_owned()) {
-            return cx.render(rsx! { img { class: "image", src: "{img}" } });
-        }
-    }
-    let alt = alt.map(|s| s.as_str()).unwrap_or_else(|| "?");
-    return cx.render(rsx! { div { class: "icon_alt", dangerous_inner_html: "{alt}" } });
-}
-
-/// render a single result entry w/ the given information
-fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
-    // build css classes for result and actions (if nessesary)
-    let main_select = cx.props.index == cx.props.pos;
-    let action_select = main_select && cx.props.subpos > 0;
-    let action_classes = match action_select {
-        true => "active",
-        false => "",
-    };
-    let multi_classes = match cx.props.entry.actions.len() > 1 {
-        true => "submenu",
-        false => "",
-    };
-    let result_classes = match main_select && !action_select {
-        true => "selected",
-        false => "",
-    };
-    // build sub-actions if present
-    let actions = cx
-        .props
-        .entry
-        .actions
-        .iter()
-        .skip(1)
-        .enumerate()
-        .map(|(idx, action)| {
-            let act_class = match action_select && idx + 1 == cx.props.subpos {
-                true => "selected",
-                false => "",
-            };
-            cx.render(rsx! {
-                div {
-                    class: "action {act_class}",
-                    onclick: move |_| cx.props.state.set_position(cx.props.index, idx + 1),
-                    ondblclick: |_| cx.props.state.set_event(KeyEvent::Exec),
-                    div {
-                        class: "action-name",
-                        dangerous_inner_html: "{action.name}"
-                    }
-                    div {
-                        class: "action-comment",
-                        render_comment(action.comment.as_ref())
-                    }
-                }
-            })
-        });
-    cx.render(rsx! {
-        div {
-            class: "result-entry",
-            div {
-                id: "result-{cx.props.index}",
-                class: "result {result_classes} {multi_classes}",
-                // onmouseenter: |_| cx.props.state.set_position(cx.props.index, 0),
-                onclick: |_| cx.props.state.set_position(cx.props.index, 0),
-                ondblclick: |_| cx.props.state.set_event(KeyEvent::Exec),
-                if cx.props.state.config().use_icons {
-                    cx.render(rsx! {
-                        div {
-                            class: "icon",
-                            render_image(cx, cx.props.entry.icon.as_ref(), cx.props.entry.icon_alt.as_ref())
-                        }
-                    })
-                }
-                match cx.props.state.config().use_comments {
-                    true => cx.render(rsx! {
-                        div {
-                            class: "name",
-                            dangerous_inner_html: "{cx.props.entry.name}"
-                        }
-                        div {
-                            class: "comment",
-                            dangerous_inner_html: render_comment(cx.props.entry.comment.as_ref())
-                        }
-                    }),
-                    false => cx.render(rsx! {
-                        div {
-                            class: "entry",
-                            dangerous_inner_html: "{cx.props.entry.name}"
-                        }
-                    })
-                }
-            }
-            div {
-                id: "result-{cx.props.index}-actions",
-                class: "actions {action_classes}",
-                actions.into_iter()
-            }
-        }
-    })
-}
-
-#[inline]
-fn focus<T>(cx: Scope<T>) {
-    let eval = use_eval(cx);
-    let js = "document.getElementById(`search`).focus()";
-    let _ = eval(js);
+    search: String,
+    results: Vec<&'a Entry>,
+    data: &'a AppData,
 }
 
 /// check if the current inputs match any of the given keybindings
@@ -171,117 +92,186 @@ fn matches(bind: &Vec<Keybind>, mods: &Modifiers, key: &Code) -> bool {
     bind.iter().any(|b| mods.contains(b.mods) && &b.key == key)
 }
 
-/// retrieve string value for display-capable enum
-#[inline]
-fn get_str<T: Display>(item: Option<T>) -> String {
-    item.map(|i| i.to_string()).unwrap_or_else(String::new)
-}
-
-/// main application function/loop
-fn App<'a>(cx: Scope<App>) -> Element {
-    let mut state = AppState::new(cx, cx.props);
-
-    // always ensure focus
-    focus(cx);
-
-    // log current position
-    let search = state.search();
-    let (pos, subpos) = state.position();
-    log::debug!("search: {search:?}, pos: {pos}, {subpos}");
-
-    // generate state tracker instances
-    let results = state.results(&cx.props.entries);
-    let k_updater = state.partial_copy();
-    let s_updater = state.partial_copy();
-
-    // build keyboard actions event handler
-    let keybinds = &cx.props.config.keybinds;
-    let keyboard_controls = move |e: KeyboardEvent| {
-        let code = e.code();
-        let mods = e.modifiers();
-        if matches(&keybinds.exec, &mods, &code) {
-            k_updater.set_event(KeyEvent::Exec);
-        } else if matches(&keybinds.exit, &mods, &code) {
-            k_updater.set_event(KeyEvent::Exit);
-        } else if matches(&keybinds.move_next, &mods, &code) {
-            k_updater.set_event(KeyEvent::MoveNext);
-        } else if matches(&keybinds.move_prev, &mods, &code) {
-            k_updater.set_event(KeyEvent::MovePrev);
-        } else if matches(&keybinds.open_menu, &mods, &code) {
-            k_updater.set_event(KeyEvent::OpenMenu);
-        } else if matches(&keybinds.close_menu, &mods, &code) {
-            k_updater.set_event(KeyEvent::CloseMenu);
-        } else if matches(&keybinds.jump_next, &mods, &code) {
-            k_updater.set_event(KeyEvent::JumpNext)
-        } else if matches(&keybinds.jump_prev, &mods, &code) {
-            k_updater.set_event(KeyEvent::JumpPrev)
+impl<'a> AppState<'a> {
+    fn new(data: &'a AppData) -> Self {
+        Self {
+            pos: 0,
+            subpos: 0,
+            search: "".to_owned(),
+            results: vec![],
+            data,
         }
-    };
+    }
 
-    // handle keyboard events
-    state.handle_events(cx);
+    /// Update AppState w/ new Search and Render HTML Results
+    fn search(&mut self, search: String) -> String {
+        // update search and calculate matching results
+        let sfn = build_searchfn(&self.data.config, &search);
+        self.pos = 0;
+        self.search = search;
+        self.results = self.data.entries.iter().filter(|e| sfn(e)).collect();
+        // generate results html from template
+        let template = ResultsTemplate {
+            config: &self.data.config,
+            results: &self.results,
+        };
+        template.render().unwrap()
+    }
 
-    // render results objects
-    let rendered_results = results.iter().enumerate().map(|(i, e)| {
-        let state = state.partial_copy();
-        cx.render(rsx! {
-            TableEntry{
-                pos:    pos,
-                subpos: subpos,
-                index:  i,
-                entry:  e,
-                state: state,
-            }
-        })
-    });
+    /// Execute Action associated w/ Current Position/Subposition
+    fn execute(&self) {
+        log::debug!("execute {} {}", self.pos, self.subpos);
+        let Some(result) = self.results.get(self.pos) else {
+            return;
+        };
+        log::debug!("result: {result:?}");
+        let Some(action) = result.actions.get(self.subpos) else {
+            return;
+        };
+        log::debug!("action: {action:?}");
+        execute(action, self.data.config.terminal.clone());
+    }
 
-    // get input settings
-    let minlen = get_str(cx.props.config.search.min_length.as_ref());
-    let maxlen = get_str(cx.props.config.search.max_length.as_ref());
-    let placeholder = get_str(cx.props.config.search.placeholder.as_ref());
+    #[inline]
+    fn move_up(&mut self, up: usize) {
+        self.pos = std::cmp::max(self.pos, up) - up;
+    }
 
-    // complete final rendering
-    cx.render(rsx! {
-        style { DEFAULT_CSS_CONTENT }
-        style { "{cx.props.theme}" }
-        style { "{cx.props.css}" }
-        div {
-            id: "content",
-            class: "content",
-            div {
-                id: "navbar",
-                class: "navbar",
-                match cx.props.config.search.restrict.as_ref() {
-                    Some(pattern) => cx.render(rsx! {
-                        input {
-                            id: "search",
-                            value: "{search}",
-                            pattern: "{pattern}",
-                            minlength: "{minlen}",
-                            maxlength: "{maxlen}",
-                            placeholder: "{placeholder}",
-                            oninput: move |e| s_updater.set_search(cx, e.value.clone()),
-                            onkeydown: keyboard_controls,
-                        }
-                    }),
-                    None => cx.render(rsx! {
-                        input {
-                            id: "search",
-                            value: "{search}",
-                            minlength: "{minlen}",
-                            maxlength: "{maxlen}",
-                            placeholder: "{placeholder}",
-                            oninput: move |e| s_updater.set_search(cx, e.value.clone()),
-                            onkeydown: keyboard_controls,
-                        }
-                    })
+    #[inline]
+    fn move_down(&mut self, down: usize) {
+        self.pos = std::cmp::min(self.pos + down, self.results.len() - 1);
+    }
+
+    /// Handle Search Event sent by UI
+    fn search_event(&mut self, search: String) -> Option<String> {
+        let results = self.search(search);
+        Some(format!("update({results:?})"))
+    }
+
+    //TODO: need to increase page-size as cursor moves down
+    //TODO: add loading on scroll as well
+    //TODO: add submenu access and selection
+    //TODO: put back main to reference actual config
+    //TODO: update sway config to make borderless
+
+    /// Handle Keyboard Events sent by UI
+    fn key_event(&mut self, event: KeyEvent) -> Option<String> {
+        let code = Code::from_str(&event.key).ok()?;
+        let mods = event.modifiers();
+        let keybinds = &self.data.config.keybinds;
+        if matches(&keybinds.exec, &mods, &code) {
+            self.execute();
+            None
+        } else if matches(&keybinds.exit, &mods, &code) {
+            std::process::exit(0);
+        } else if matches(&keybinds.move_next, &mods, &code) {
+            self.move_down(1);
+            Some(format!("setpos({})", self.pos))
+        } else if matches(&keybinds.move_prev, &mods, &code) {
+            self.move_up(1);
+            Some(format!("setpos({})", self.pos))
+        } else if matches(&keybinds.open_menu, &mods, &code) {
+            // k_updater.set_event(KeyEvent::OpenMenu);
+            None
+        } else if matches(&keybinds.close_menu, &mods, &code) {
+            // k_updater.set_event(KeyEvent::CloseMenu);
+            None
+        } else if matches(&keybinds.jump_next, &mods, &code) {
+            self.move_down(self.data.config.jump_dist);
+            Some(format!("setpos({})", self.pos))
+        } else if matches(&keybinds.jump_prev, &mods, &code) {
+            self.move_up(self.data.config.jump_dist);
+            Some(format!("setpos({})", self.pos))
+        } else {
+            None
+        }
+    }
+
+    /// Parse Position/Subposition from HTML Element Id
+    fn parse_id_pos(&self, id: &str) -> Option<(usize, usize)> {
+        let mut chunks = id.split("-");
+        chunks.next()?;
+        let pos = chunks.next()?.parse().ok()?;
+        let mut subpos = 0;
+        if chunks.next().is_some() {
+            subpos = chunks.next()?.parse().ok()?;
+        }
+        Some((pos, subpos))
+    }
+
+    /// Handle Single/Doubleclicks Events sent by UI
+    fn click_event(&mut self, event: ClickEvent) -> Option<String> {
+        match event {
+            ClickEvent::Single { id } => {
+                if let Some((pos, subpos)) = self.parse_id_pos(&id) {
+                    self.pos = pos;
+                    self.subpos = subpos;
+                    return Some(format!("setpos({pos}, true)"));
                 }
             }
-            div {
-                id: "results",
-                class: "results",
-                rendered_results.into_iter()
+            ClickEvent::Double { id } => {
+                if let Some((pos, subpos)) = self.parse_id_pos(&id) {
+                    self.pos = pos;
+                    self.subpos = subpos;
+                    self.execute();
+                }
             }
+        };
+        None
+    }
+
+    /// Handle Scrolling Events sent by UI
+    fn scroll_event(&mut self, event: ScrollEvent) -> Option<String> {
+        println!("scroll: {event:?}");
+        None
+    }
+
+    /// Parse and Process Raw UI Messages
+    fn handle_event(&mut self, event: &str) -> Option<String> {
+        let message: Message = serde_json::from_str(&event).unwrap();
+        match message {
+            Message::Search { value } => self.search_event(value),
+            Message::KeyDown(event) => self.key_event(event),
+            Message::Click(event) => self.click_event(event),
+            Message::Scroll(event) => self.scroll_event(event),
         }
-    })
+    }
+
+    /// Render Initial Index HTML w/ AppState
+    fn render_index(&mut self) -> String {
+        let results = self.search("".to_owned());
+        let index = IndexTemplate {
+            css: &format!("{INDEX_CSS}\n{}\n{}", self.data.css, self.data.theme),
+            search: &self.search,
+            results: &results,
+            config: &self.data.config,
+            script: &INDEX_JS,
+        };
+        index.render().unwrap()
+    }
+}
+
+/// Run GUI Applcation via WebView
+pub fn run(data: AppData) {
+    // build app-state
+    let mut state = AppState::new(&data);
+    let html = state.render_index();
+    // spawn webview instance
+    let size = &state.data.config.window.size;
+    web_view::builder()
+        .title(&state.data.config.window.title)
+        .content(Content::Html(html))
+        .frameless(!state.data.config.window.decorate)
+        .size(size.width as i32, size.height as i32)
+        .resizable(false)
+        .debug(true)
+        .user_data(())
+        .invoke_handler(|webview, msg| {
+            if let Some(js) = state.handle_event(msg) {
+                webview.eval(&js)?;
+            };
+            Ok(())
+        })
+        .run()
+        .unwrap();
 }

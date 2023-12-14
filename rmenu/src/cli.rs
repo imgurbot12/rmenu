@@ -1,3 +1,4 @@
+///! RMenu CLI Implementation
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::process::{Command, ExitStatus, Stdio};
@@ -134,12 +135,6 @@ pub struct Args {
     /// Override Window Height
     #[arg(long)]
     height: Option<f64>,
-    /// Override Window X Position
-    #[arg(long)]
-    xpos: Option<f64>,
-    /// Override Window Y Position
-    #[arg(long)]
-    ypos: Option<f64>,
     /// Override Window Focus on Startup
     #[arg(long)]
     focus: Option<bool>,
@@ -225,8 +220,6 @@ impl Args {
         cfg_replace!(config.window.title, self.title, true);
         cfg_replace!(config.window.size.width, self.width, true);
         cfg_replace!(config.window.size.height, self.height, true);
-        cfg_replace!(config.window.position.x, self.xpos, true);
-        cfg_replace!(config.window.position.y, self.ypos, true);
         cfg_replace!(config.window.focus, self.focus, true);
         cfg_replace!(config.window.decorate, self.decorate, true);
         cfg_replace!(config.window.transparent, self.transparent, true);
@@ -301,7 +294,6 @@ impl Args {
         let mut entries = vec![];
         for name in self.run.clone().into_iter() {
             // retrieve plugin configuration
-            log::info!("running plugin: {name:?}");
             let plugin = config
                 .plugins
                 .get(&name)

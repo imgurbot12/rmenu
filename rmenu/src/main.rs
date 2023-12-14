@@ -3,21 +3,19 @@ mod cli;
 mod config;
 mod exec;
 mod gui;
-mod image;
 mod search;
-mod state;
 
 use clap::Parser;
+use config::{CacheSetting, PluginConfig};
 use rmenu_plugin::{self_exe, Entry};
 
 static CONFIG_DIR: &'static str = "~/.config/rmenu/";
 static DEFAULT_CSS: &'static str = "~/.config/rmenu/style.css";
 static DEFAULT_CONFIG: &'static str = "~/.config/rmenu/config.yaml";
-static DEFAULT_CSS_CONTENT: &'static str = include_str!("../public/default.css");
 
 /// Application State for GUI
 #[derive(Debug, PartialEq)]
-pub struct App {
+pub struct AppData {
     css: String,
     name: String,
     theme: String,
@@ -43,7 +41,17 @@ fn main() -> cli::Result<()> {
 
     // parse cli and retrieve values for app
     let mut cli = cli::Args::parse();
-    let mut config = cli.get_config()?;
+    // let mut config = cli.get_config()?;
+    let mut config = crate::config::Config::default();
+    config.plugins.insert(
+        "run".to_owned(),
+        PluginConfig {
+            exec: vec!["/home/andrew/.config/rmenu/rmenu-run".to_owned()],
+            cache: CacheSetting::OnLogin,
+            placeholder: None,
+            options: None,
+        },
+    );
     let entries = cli.get_entries(&mut config)?;
     let css = cli.get_css(&config);
     let theme = cli.get_theme();
@@ -63,7 +71,7 @@ fn main() -> cli::Result<()> {
     }
 
     // genrate app context and run gui
-    gui::run(App {
+    gui::run(AppData {
         name: "rmenu".to_owned(),
         css,
         theme,

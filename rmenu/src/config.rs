@@ -1,15 +1,11 @@
-//! RMENU Configuration Implementations
+/// RMenu Configuration Management
+use std::collections::BTreeMap;
+use std::str::FromStr;
+
 use heck::AsPascalCase;
 use keyboard_types::{Code, Modifiers};
 use rmenu_plugin::Options;
 use serde::{de::Error, Deserialize};
-use std::collections::BTreeMap;
-use std::str::FromStr;
-
-use dioxus_desktop::tao::{
-    dpi::{LogicalPosition, LogicalSize},
-    window::Fullscreen,
-};
 
 // parse supported modifiers from string
 fn mod_from_str(s: &str) -> Option<Modifiers> {
@@ -97,8 +93,8 @@ impl Default for KeyConfig {
         return Self {
             exec: vec![Keybind::new(Code::Enter)],
             exit: vec![Keybind::new(Code::Escape)],
-            move_next: vec![Keybind::new(Code::ArrowUp)],
-            move_prev: vec![Keybind::new(Code::ArrowDown)],
+            move_next: vec![Keybind::new(Code::ArrowDown)],
+            move_prev: vec![Keybind::new(Code::ArrowUp)],
             open_menu: vec![],
             close_menu: vec![],
             jump_next: vec![Keybind::new(Code::PageDown)],
@@ -107,12 +103,23 @@ impl Default for KeyConfig {
     }
 }
 
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct LogicalSize<T> {
+    pub width: T,
+    pub height: T,
+}
+
+impl<T> LogicalSize<T> {
+    pub fn new(width: T, height: T) -> Self {
+        Self { width, height }
+    }
+}
+
 /// GUI Desktop Window Configuration Settings
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct WindowConfig {
     pub title: String,
     pub size: LogicalSize<f64>,
-    pub position: LogicalPosition<f64>,
     #[serde(default = "_true")]
     pub focus: bool,
     pub decorate: bool,
@@ -123,25 +130,11 @@ pub struct WindowConfig {
     pub dark_mode: Option<bool>,
 }
 
-impl WindowConfig {
-    /// Retrieve Desktop Compatabible Fullscreen Settings
-    pub fn get_fullscreen(&self) -> Option<Fullscreen> {
-        self.fullscreen.and_then(|fs| match fs {
-            true => Some(Fullscreen::Borderless(None)),
-            false => None,
-        })
-    }
-}
-
 impl Default for WindowConfig {
     fn default() -> Self {
         Self {
             title: "RMenu - App Launcher".to_owned(),
-            size: LogicalSize {
-                width: 700.0,
-                height: 400.0,
-            },
-            position: LogicalPosition { x: 100.0, y: 100.0 },
+            size: LogicalSize::new(700.0, 400.0),
             focus: true,
             decorate: false,
             transparent: false,
@@ -259,7 +252,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            page_size: 50,
+            page_size: 200,
             page_load: 0.8,
             jump_dist: 5,
             use_icons: true,

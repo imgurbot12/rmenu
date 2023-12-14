@@ -19,12 +19,13 @@ body,
   left: 0;
   position: fixed;
   overflow: hidden;
+  height: 10vh;
   width: -webkit-fill-available;
 }
 
 .results {
-  height: 100vh;
-  margin-top: 50px;
+  height: 90vh;
+  margin-top: 10vh;
   overflow-y: auto;
 }
 

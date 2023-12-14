@@ -6,7 +6,7 @@ use crate::config::Config;
 
 /// Generate a new dynamic Search Function based on
 /// Configurtaion Settings and Search-String
-pub fn new_searchfn(cfg: &Config, search: &str) -> Box<dyn Fn(&Entry) -> bool> {
+pub fn build_searchfn(cfg: &Config, search: &str) -> Box<dyn Fn(&Entry) -> bool> {
     // build regex search expression
     if cfg.search.use_regex {
         let rgx = RegexBuilder::new(search)

@@ -1,0 +1,35 @@
+{%- for (i, entry) in results.iter().enumerate() %}
+<div class="result-entry">
+  <div 
+    id="result-{{ i }}" 
+    class="result {%if entry.actions.len() > 1%}submenu{%endif%}" 
+    onclick="sclick(this.id)"
+    ondblclick="dclick(this.id)">
+    {%-if config.use_icons %}
+    <div class="icon"></div>
+    {%endif%}
+    {%-if config.use_comments %}
+    <div class="name">{{ entry.name|safe }}</div>
+    <div class="comment">
+      {%- if let Some(comment) = entry.comment %}
+      {{ comment|safe }}
+      {%endif%}
+    </div>
+    {%else%}
+    <div class="entry">{{  entry.name|safe }}</div>
+    {%endif%}
+    <div id="result-{{ i }}-actions" class="actions">
+      {%for action in entry.actions%}
+      <div class="action">
+        <div class="action-name">{{ action.name|safe }}</div>
+        <div class="action-comment">
+          {%- if let Some(comment) = action.comment %}
+          {{ comment|safe }}
+          {%endif%}
+        </div>
+      </div>
+      {%endfor%}
+    </div>
+  </div> 
+</div>
+{%endfor%}
