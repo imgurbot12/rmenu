@@ -7,7 +7,6 @@ mod icons;
 mod search;
 
 use clap::Parser;
-use config::{CacheSetting, PluginConfig};
 use rmenu_plugin::{self_exe, Entry};
 
 static CONFIG_DIR: &'static str = "~/.config/rmenu/";
@@ -42,26 +41,7 @@ fn main() -> cli::Result<()> {
 
     // parse cli and retrieve values for app
     let mut cli = cli::Args::parse();
-    // let mut config = cli.get_config()?;
-    let mut config = crate::config::Config::default();
-    config.plugins.insert(
-        "run".to_owned(),
-        PluginConfig {
-            exec: vec!["/home/andrew/.config/rmenu/rmenu-run".to_owned()],
-            cache: CacheSetting::OnLogin,
-            placeholder: None,
-            options: None,
-        },
-    );
-    config.plugins.insert(
-        "drun".to_owned(),
-        PluginConfig {
-            exec: vec!["/home/andrew/.config/rmenu/rmenu-desktop".to_owned()],
-            cache: CacheSetting::OnLogin,
-            placeholder: None,
-            options: None,
-        },
-    );
+    let mut config = cli.get_config()?;
     let entries = cli.get_entries(&mut config)?;
     let css = cli.get_css(&config);
     let theme = cli.get_theme();

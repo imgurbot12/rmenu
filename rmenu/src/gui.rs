@@ -173,22 +173,66 @@ impl<'a> AppState<'a> {
         None
     }
 
-    #[inline]
+    /// Move Up a Number of Full Positions
     fn move_up(&mut self, up: usize) -> Option<String> {
         self.pos = std::cmp::max(self.pos, up) - up;
+        self.subpos = 0;
         Some(format!("setpos({})", self.pos))
     }
 
-    #[inline]
+    /// Move Down a Number of Full Positions
     fn move_down(&mut self, down: usize) -> Option<String> {
         let max = (self.page + 1) * self.data.config.page_size;
         let n = std::cmp::max(self.results.len(), 1);
         let end = std::cmp::min(max, n) - 1;
         self.pos = std::cmp::min(self.pos + down, end);
+        self.subpos = 0;
         match self.append_results(false) {
             Some(operation) => Some(operation),
             None => Some(format!("setpos({})", self.pos)),
         }
+    }
+
+    /// Move Next w/ Context of Sub-Menus
+    fn move_next(&mut self) -> Option<String> {
+        if let Some(entry) = self.results.get(self.pos) {
+            if self.subpos > 0 && self.subpos < entry.actions.len() - 1 {
+                self.subpos += 1;
+                return Some(format!("subpos({}, {})", self.pos, self.subpos));
+            }
+        }
+        self.move_down(1)
+    }
+
+    /// Move Previous w/ Context of Sub-Menus
+    fn move_prev(&mut self) -> Option<String> {
+        if self.subpos > 1 {
+            self.subpos -= 1;
+            return Some(format!("subpos({}, {})", self.pos, self.subpos));
+        }
+        if self.subpos == 1 {
+            self.subpos = 0;
+            return Some(format!("setpos({})", self.pos));
+        }
+        self.move_up(1)
+    }
+
+    /// Move Position to Submenu (if one Exists)
+    fn open_menu(&mut self) -> Option<String> {
+        if let Some(result) = self.results.get(self.pos) {
+            let newpos = self.subpos + 1;
+            if result.actions.len() > newpos {
+                self.subpos = newpos;
+                return Some(format!("subpos({}, {})", self.pos, self.subpos));
+            }
+        }
+        None
+    }
+
+    /// Close SubMenu (if one is Open)
+    fn close_menu(&mut self) -> Option<String> {
+        self.subpos = 0;
+        Some(format!("setpos({})", self.pos))
     }
 
     /// Handle Search Event sent by UI
@@ -197,7 +241,6 @@ impl<'a> AppState<'a> {
         Some(format!("update({results:?})"))
     }
 
-    //TODO: add submenu access and selection
     //TODO: put back main to reference actual config
     //TODO: update sway config to make borderless
 
@@ -212,15 +255,13 @@ impl<'a> AppState<'a> {
         } else if matches(&keybinds.exit, &mods, &code) {
             std::process::exit(0);
         } else if matches(&keybinds.move_next, &mods, &code) {
-            self.move_down(1)
+            self.move_next()
         } else if matches(&keybinds.move_prev, &mods, &code) {
-            self.move_up(1)
+            self.move_prev()
         } else if matches(&keybinds.open_menu, &mods, &code) {
-            // k_updater.set_event(KeyEvent::OpenMenu);
-            None
+            self.open_menu()
         } else if matches(&keybinds.close_menu, &mods, &code) {
-            // k_updater.set_event(KeyEvent::CloseMenu);
-            None
+            self.close_menu()
         } else if matches(&keybinds.jump_next, &mods, &code) {
             self.move_down(self.data.config.jump_dist)
         } else if matches(&keybinds.jump_prev, &mods, &code) {
@@ -303,20 +344,41 @@ impl<'a> AppState<'a> {
     }
 }
 
+/// Update Gtk's Screen w/ Custom CSS to make Transparent
+fn transparency_hack() {
+    use gdk_sys::gdk_screen_get_default;
+    use gtk_sys::*;
+    use std::ffi::CString;
+    // generate css-provider
+    let provider = unsafe { gtk_css_provider_new() };
+    // apply css to css-provider
+    let css = CString::new("* { background: transparent }").unwrap();
+    let clen = css.as_bytes().len();
+    let mut error = std::ptr::null_mut();
+    unsafe { gtk_css_provider_load_from_data(provider, css.as_ptr() as _, clen as _, &mut error) };
+    // retrieve screen and apply css- provider to screen
+    let prio = GTK_STYLE_PROVIDER_PRIORITY_APPLICATION;
+    let screen = unsafe { gdk_screen_get_default() };
+    unsafe { gtk_style_context_add_provider_for_screen(screen, provider as _, prio as _) };
+}
+
 /// Run GUI Applcation via WebView
 pub fn run(data: AppData) {
     // build app-state
     let mut state = AppState::new(&data);
     let html = state.render_index();
     // spawn webview instance
-    let size = &state.data.config.window.size;
-    web_view::builder()
+    let wcfg = &state.data.config.window;
+    let size = &wcfg.size;
+    let fullscreen = wcfg.fullscreen;
+    let transparent = wcfg.transparent;
+    let mut window = web_view::builder()
         .title(&state.data.config.window.title)
         .content(Content::Html(html))
-        .frameless(!state.data.config.window.decorate)
+        .frameless(!wcfg.decorate)
         .size(size.width as i32, size.height as i32)
-        .resizable(false)
-        .debug(true)
+        .resizable(wcfg.resizable)
+        .debug(cfg!(debug_assertions))
         .user_data(())
         .invoke_handler(|webview, msg| {
             if let Some(js) = state.handle_event(msg) {
@@ -324,6 +386,16 @@ pub fn run(data: AppData) {
             };
             Ok(())
         })
-        .run()
+        .build()
         .unwrap();
+    // manage transparency and fullscreen settings
+    if transparent {
+        window.set_color((0, 0, 0, 0));
+        #[cfg(target_os = "linux")]
+        transparency_hack();
+    }
+    if let Some(fullscreen) = fullscreen {
+        window.set_fullscreen(fullscreen);
+    }
+    window.run().unwrap();
 }

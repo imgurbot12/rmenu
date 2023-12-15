@@ -2,6 +2,7 @@
 
 /* Variables */
 
+const input = document.getElementById("search");
 const results = document.getElementById("results");
 
 /* Functions */
@@ -24,8 +25,9 @@ function search(value) {
 }
 
 /// send keydown event back to rust
-function keydown({ key, ctrlKey, shiftKey }) {
-  _send("keydown", { key, "ctrl": ctrlKey, "shift": shiftKey });
+function keydown(e) {
+  (e.key == "ArrowUp" || e.key == "ArrowDown") && e.preventDefault();
+  _send("keydown", { "key": e.key, "ctrl": e.ctrlKey, "shift": e.shiftKey });
 }
 
 /// send click event back to rust
@@ -44,17 +46,22 @@ function scroll() {
   _send("scroll", { "y": results.scrollTop, "maxy": height });
 }
 
+// remove active class from all current objects
+function reset() {
+  const classes = ["active", "selected"];
+  for (const cname of classes) {
+    const selected = document.getElementsByClassName(cname);
+    const elems = Array.from(selected);
+    elems.forEach((e) => e.classList.remove(cname));
+  }
+}
+
 /// set selected-result position
 function setpos(pos, smooth = false) {
-  // remove selected class from all current objects
-  const selected = document.getElementsByClassName("selected");
-  const elems = Array.from(selected);
-  elems.forEach((e) => e.classList.remove("selected"));
+  reset();
   // add selected to current position
-  let current = document.getElementById(`result-${pos}`);
-  if (!current) {
-    return;
-  }
+  const current = document.getElementById(`result-${pos}`);
+  if (!current) return;
   current.classList.add("selected");
   // ensure selected always within view
   current.scrollIntoView({
@@ -62,6 +69,19 @@ function setpos(pos, smooth = false) {
     block: "center",
     inline: "center",
   });
+}
+
+// set selected-result subposition
+function subpos(pos, subpos) {
+  reset();
+  // activate submenu
+  const actions = document.getElementById(`result-${pos}-actions`);
+  if (!actions) return;
+  actions.classList.add("active");
+  // select current subposition
+  const action = document.getElementById(`result-${pos}-action-${subpos}`);
+  if (!action) return;
+  action.classList.add("selected");
 }
 
 /// Update Results HTML

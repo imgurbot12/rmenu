@@ -56,7 +56,8 @@ input {
   justify-content: left;
 }
 
-.result > div, .action > div {
+.result div, 
+.action div {
   margin: 2px 5px;
 }
 

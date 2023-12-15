@@ -31,18 +31,19 @@
     {%else%}
     <div class="entry">{{  entry.name|safe }}</div>
     {%endif%}
-    <div id="result-{{ i }}-actions" class="actions">
-      {%for action in entry.actions%}
-      <div class="action">
-        <div class="action-name">{{ action.name|safe }}</div>
-        <div class="action-comment">
-          {%- if let Some(comment) = action.comment %}
-          {{ comment|safe }}
-          {%endif%}
-        </div>
-      </div>
-      {%endfor%}
-    </div>
   </div> 
+  <div id="result-{{ i }}-actions" class="actions">
+    {%for n in 1..entry.actions.len() %}
+    {% let action = entry.actions[n] %}
+    <div id="result-{{ i }}-action-{{ n }}" class="action">
+      <div class="action-name">{{ action.name|safe }}</div>
+      <div class="action-comment">
+        {%- if let Some(comment) = action.comment %}
+        {{ comment|safe }}
+        {%endif%}
+      </div>
+    </div>
+    {%endfor%}
+  </div>
 </div>
 {%endfor%}

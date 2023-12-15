@@ -7,6 +7,16 @@ use keyboard_types::{Code, Modifiers};
 use rmenu_plugin::Options;
 use serde::{de::Error, Deserialize};
 
+#[inline(always)]
+fn _true() -> bool {
+    true
+}
+
+#[inline(always)]
+fn _false() -> bool {
+    false
+}
+
 // parse supported modifiers from string
 fn mod_from_str(s: &str) -> Option<Modifiers> {
     match s.to_lowercase().as_str() {
@@ -95,8 +105,8 @@ impl Default for KeyConfig {
             exit: vec![Keybind::new(Code::Escape)],
             move_next: vec![Keybind::new(Code::ArrowDown)],
             move_prev: vec![Keybind::new(Code::ArrowUp)],
-            open_menu: vec![],
-            close_menu: vec![],
+            open_menu: vec![Keybind::new(Code::ArrowRight)],
+            close_menu: vec![Keybind::new(Code::ArrowLeft)],
             jump_next: vec![Keybind::new(Code::PageDown)],
             jump_prev: vec![Keybind::new(Code::PageUp)],
         };
@@ -109,21 +119,35 @@ pub struct LogicalSize<T> {
     pub height: T,
 }
 
-impl<T> LogicalSize<T> {
-    pub fn new(width: T, height: T) -> Self {
-        Self { width, height }
+impl Default for LogicalSize<f64> {
+    fn default() -> Self {
+        Self {
+            width: 800.0,
+            height: 400.0,
+        }
     }
+}
+
+#[inline(always)]
+fn _title() -> String {
+    "RMenu Application Launcher".to_owned()
 }
 
 /// GUI Desktop Window Configuration Settings
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct WindowConfig {
+    #[serde(default = "_title")]
     pub title: String,
+    #[serde(default = "LogicalSize::default")]
     pub size: LogicalSize<f64>,
     #[serde(default = "_true")]
     pub focus: bool,
+    #[serde(default = "_false")]
     pub decorate: bool,
+    #[serde(default = "_false")]
     pub transparent: bool,
+    #[serde(default = "_true")]
+    pub resizable: bool,
     #[serde(default = "_true")]
     pub always_top: bool,
     pub fullscreen: Option<bool>,
@@ -133,11 +157,12 @@ pub struct WindowConfig {
 impl Default for WindowConfig {
     fn default() -> Self {
         Self {
-            title: "RMenu - App Launcher".to_owned(),
-            size: LogicalSize::new(700.0, 400.0),
+            title: _title(),
+            size: LogicalSize::default(),
             focus: true,
             decorate: false,
             transparent: false,
+            resizable: true,
             always_top: true,
             fullscreen: None,
             dark_mode: None,
@@ -199,11 +224,6 @@ pub struct PluginConfig {
     pub options: Option<Options>,
 }
 
-#[inline]
-fn _true() -> bool {
-    true
-}
-
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct SearchConfig {
@@ -230,20 +250,42 @@ impl Default for SearchConfig {
     }
 }
 
+#[inline(always)]
+fn _page_size() -> usize {
+    50
+}
+
+#[inline(always)]
+fn _page_load() -> f64 {
+    0.8
+}
+
+#[inline(always)]
+fn _jump_dist() -> usize {
+    5
+}
+
 /// Global RMenu Complete Configuration
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct Config {
+    #[serde(default = "_page_size")]
     pub page_size: usize,
+    #[serde(default = "_page_load")]
     pub page_load: f64,
+    #[serde(default = "_jump_dist")]
     pub jump_dist: usize,
     #[serde(default = "_true")]
     pub use_icons: bool,
     #[serde(default = "_true")]
     pub use_comments: bool,
+    #[serde(default)]
     pub search: SearchConfig,
+    #[serde(default)]
     pub plugins: BTreeMap<String, PluginConfig>,
+    #[serde(default)]
     pub keybinds: KeyConfig,
+    #[serde(default)]
     pub window: WindowConfig,
     pub css: Option<String>,
     pub terminal: Option<String>,
@@ -252,9 +294,9 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            page_size: 50,
-            page_load: 0.8,
-            jump_dist: 5,
+            page_size: _page_size(),
+            page_load: _page_load(),
+            jump_dist: _jump_dist(),
             use_icons: true,
             use_comments: true,
             search: Default::default(),
