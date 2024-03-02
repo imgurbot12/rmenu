@@ -6,7 +6,7 @@ use dioxus::prelude::*;
 use dioxus_desktop::LogicalSize;
 use dioxus_free_icons::icons::fa_regular_icons::{FaEye, FaEyeSlash};
 use dioxus_free_icons::Icon;
-use keyboard_types::Code;
+use dioxus_html::input_data::keyboard_types::Code;
 
 use crate::network::Manager;
 
