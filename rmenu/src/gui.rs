@@ -3,7 +3,7 @@
 use std::fmt::Display;
 
 use dioxus::prelude::*;
-use keyboard_types::{Code, Modifiers};
+use dioxus_html::input_data::keyboard_types::{Code, Modifiers};
 use rmenu_plugin::Entry;
 
 use crate::config::Keybind;
