@@ -1,6 +1,5 @@
 //! RMENU Configuration Implementations
 use heck::AsPascalCase;
-use keyboard_types::{Code, Modifiers};
 use rmenu_plugin::Options;
 use serde::{de::Error, Deserialize};
 use std::collections::BTreeMap;
@@ -10,6 +9,7 @@ use dioxus_desktop::tao::{
     dpi::{LogicalPosition, LogicalSize},
     window::Fullscreen,
 };
+use dioxus_html::input_data::keyboard_types::{Code, Modifiers};
 
 // parse supported modifiers from string
 fn mod_from_str(s: &str) -> Option<Modifiers> {
