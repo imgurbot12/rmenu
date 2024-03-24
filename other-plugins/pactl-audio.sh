@@ -1,7 +1,7 @@
 #!/bin/sh
 
 get_sinks() {
-  sinks=`pactl list sinks | grep -e 'Sink' -e 'Name' -e 'Description' | nl -s '>'`
+  sinks=`pactl list sinks | grep -e 'Sink ' -e 'Name: ' -e 'Description: ' | nl -s '>'`
   default=`pactl get-default-sink`
   for i in `seq 1 3 $(echo "$sinks" | wc -l)`; do
     sink=`echo "$sinks" | grep "$i>" | cut -d '#' -f2`
