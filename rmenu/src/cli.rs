@@ -10,7 +10,7 @@ use rmenu_plugin::{Entry, Message};
 use thiserror::Error;
 
 use crate::config::{cfg_replace, Config, Keybind};
-use crate::{CONFIG_DIR, DEFAULT_CONFIG, DEFAULT_THEME};
+use crate::{DEFAULT_CONFIG, DEFAULT_THEME};
 
 /// Allowed Formats for Entry Ingestion
 #[derive(Debug, Clone)]
@@ -182,8 +182,10 @@ impl Args {
     /// Find Configuration Path
     pub fn find_config(&self) -> PathBuf {
         self.config.clone().unwrap_or_else(|| {
-            let cfgdir = std::env::var("XDG_CONFIG_DIR").unwrap_or_else(|_| CONFIG_DIR.to_string());
-            PathBuf::from(cfgdir).join(DEFAULT_CONFIG)
+            xdg::BaseDirectories::with_prefix("rmenu")
+                .expect("Failed to read xdg base dirs")
+                .find_config_file(DEFAULT_CONFIG)
+                .unwrap_or_else(PathBuf::new)
         })
     }
 
