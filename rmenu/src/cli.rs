@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
+use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Stdio};
 use std::str::FromStr;
 use std::{fmt::Display, fs::read_to_string};
@@ -9,7 +10,7 @@ use rmenu_plugin::{Entry, Message};
 use thiserror::Error;
 
 use crate::config::{cfg_replace, Config, Keybind};
-use crate::{DEFAULT_CONFIG, DEFAULT_CSS};
+use crate::{CONFIG_DIR, DEFAULT_CONFIG, DEFAULT_THEME};
 
 /// Allowed Formats for Entry Ingestion
 #[derive(Debug, Clone)]
@@ -52,18 +53,18 @@ pub struct Args {
     #[arg(short, long)]
     run: Vec<String>,
     /// Override default configuration path
-    #[arg(short, long)]
-    config: Option<String>,
+    #[arg(short, long, env = "RMENU_CONFIG")]
+    config: Option<PathBuf>,
     /// Override base css theme styling
-    #[arg(long, default_value_t=String::from(DEFAULT_CSS))]
-    theme: String,
+    #[arg(long, env = "RMENU_THEME")]
+    theme: Option<PathBuf>,
     /// Include additional css settings
-    #[arg(long)]
-    css: Option<String>,
+    #[arg(long, env = "RMENU_CSS")]
+    css: Option<PathBuf>,
 
     // root config settings
     /// Override terminal command
-    #[arg(long)]
+    #[arg(long, env = "RMENU_TERMINAL")]
     terminal: Option<String>,
     /// Number of results to include for each page
     #[arg(long)]
@@ -178,15 +179,18 @@ pub enum RMenuError {
 pub type Result<T> = std::result::Result<T, RMenuError>;
 
 impl Args {
+    /// Find Configuration Path
+    pub fn find_config(&self) -> PathBuf {
+        self.config.clone().unwrap_or_else(|| {
+            let cfgdir = std::env::var("XDG_CONFIG_DIR").unwrap_or_else(|_| CONFIG_DIR.to_string());
+            PathBuf::from(cfgdir).join(DEFAULT_CONFIG)
+        })
+    }
+
     /// Load Configuration File
-    pub fn get_config(&self) -> Result<Config> {
-        // read configuration
-        let path = self
-            .config
-            .as_ref()
-            .map(|v| v.as_str())
-            .unwrap_or(DEFAULT_CONFIG);
-        let path = shellexpand::tilde(path).to_string();
+    pub fn get_config(&self, path: &PathBuf) -> Result<Config> {
+        let path = path.to_string_lossy().to_string();
+        let path = shellexpand::tilde(&path).to_string();
         let config: Config = match read_to_string(path) {
             Ok(content) => serde_yaml::from_str(&content),
             Err(err) => {
@@ -236,23 +240,30 @@ impl Args {
     }
 
     /// Load CSS Theme or Default
-    pub fn get_theme(&self) -> String {
-        let path = shellexpand::tilde(&self.theme).to_string();
-        match read_to_string(&path) {
-            Ok(css) => css,
-            Err(err) => {
-                log::error!("Failed to load CSS: {err:?}");
-                String::new()
+    pub fn get_theme(&self, cfgdir: &PathBuf) -> String {
+        let theme = self.theme.clone().or(Some(cfgdir.join(DEFAULT_THEME)));
+        if let Some(theme) = theme {
+            let path = theme.to_string_lossy().to_string();
+            let path = shellexpand::tilde(&path).to_string();
+            match read_to_string(&path) {
+                Ok(css) => return css,
+                Err(err) => log::error!("Failed to load CSS: {err:?}"),
             }
         }
+        String::new()
     }
 
     /// Load Additional CSS or Default
     pub fn get_css(&self, c: &Config) -> String {
-        if let Some(css) = self.css.as_ref().or(c.css.as_ref()) {
-            let path = shellexpand::tilde(&css).to_string();
+        let css = self
+            .css
+            .clone()
+            .or(c.css.as_ref().map(|s| PathBuf::from(s)));
+        if let Some(css) = css {
+            let path = css.to_string_lossy().to_string();
+            let path = shellexpand::tilde(&path).to_string();
             match read_to_string(&path) {
-                Ok(theme) => return theme,
+                Ok(css) => return css,
                 Err(err) => log::error!("Failed to load Theme: {err:?}"),
             }
         }

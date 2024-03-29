@@ -11,8 +11,8 @@ use clap::Parser;
 use rmenu_plugin::{self_exe, Entry};
 
 static CONFIG_DIR: &'static str = "~/.config/rmenu/";
-static DEFAULT_CSS: &'static str = "~/.config/rmenu/style.css";
-static DEFAULT_CONFIG: &'static str = "~/.config/rmenu/config.yaml";
+static DEFAULT_THEME: &'static str = "style.css";
+static DEFAULT_CONFIG: &'static str = "config.yaml";
 static DEFAULT_CSS_CONTENT: &'static str = include_str!("../public/default.css");
 
 /// Application State for GUI
@@ -43,10 +43,9 @@ fn main() -> cli::Result<()> {
 
     // parse cli and retrieve values for app
     let mut cli = cli::Args::parse();
-    let mut config = cli.get_config()?;
+    let mut cfgpath = cli.find_config();
+    let mut config = cli.get_config(&cfgpath)?;
     let entries = cli.get_entries(&mut config)?;
-    let css = cli.get_css(&config);
-    let theme = cli.get_theme();
 
     // update config based on cli-settings and entries
     config = cli.update_config(config);
@@ -56,11 +55,11 @@ fn main() -> cli::Result<()> {
             .any(|e| e.icon.is_some() || e.icon_alt.is_some());
     config.use_comments = config.use_comments && entries.iter().any(|e| e.comment.is_some());
 
-    // change directory to config folder
-    let cfgdir = shellexpand::tilde(CONFIG_DIR).to_string();
-    if let Err(err) = std::env::set_current_dir(&cfgdir) {
-        log::error!("failed to change directory: {err:?}");
-    }
+    // retrieve cfgdir and get theme/css
+    cfgpath.pop();
+    let cfgdir = cfgpath;
+    let theme = cli.get_theme(&cfgdir);
+    let css = cli.get_css(&config);
 
     // genrate app context and run gui
     gui::run(App {
