@@ -1,6 +1,6 @@
 [package]
 name    = "rmenu"
-version = "0.0.1"
+version = "1.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -30,3 +30,4 @@ shellexpand = "3.1.0"
 strfmt = "0.2.4"
 thiserror = "1.0.43"
 which = "4.4.0"
+xdg = "2.5.2"
