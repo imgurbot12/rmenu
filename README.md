@@ -18,6 +18,9 @@ Another customizable Application-Launcher written in Rust
 
 ### Installation
 
+RMenu now has Nix support thanks to
+[@LordGrimmauld](https://github.com/LordGrimmauld)!
+
 Install Dependencies (Ubuntu)
 
 ```bash
