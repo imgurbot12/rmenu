@@ -3138,7 +3138,7 @@ dependencies = [
 
 [[package]]
 name = "rmenu"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "cached 0.44.0",
  "clap",
