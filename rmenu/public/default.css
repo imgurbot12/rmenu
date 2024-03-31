@@ -1,17 +1,17 @@
-
-body {
-  overflow: hidden;
-}
-
-body > div {
-  height: -webkit-fill-available;
-  overflow: hidden;
-}
-
 html,
 body,
 .content {
   margin: 0;
+}
+
+body {
+  overflow: hidden;
+  padding-top: 60px;
+}
+
+body>div {
+  height: -webkit-fill-available;
+  overflow: hidden;
 }
 
 .navbar {
@@ -23,9 +23,10 @@ body,
 }
 
 .results {
-  height: 100vh;
-  margin-top: 50px;
   overflow-y: auto;
+  height: calc(100vh - 60px);
+  min-height: calc(100vh - 60px);
+  scroll-margin-top: 60px;
 }
 
 .selected {
@@ -43,19 +44,21 @@ input {
   height: 5vw;
   border: none;
   outline: none;
-	padding: 5px;
-	font-size: large;
+  padding: 5px;
+  font-size: large;
 }
 
 /* Result CSS */
 
-.result, .action {
+.result,
+.action {
   display: flex;
   align-items: center;
   justify-content: left;
 }
 
-.result > div, .action > div {
+.result>div,
+.action>div {
   margin: 2px 5px;
 }
 
