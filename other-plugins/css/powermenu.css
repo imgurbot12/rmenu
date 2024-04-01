@@ -1,3 +1,6 @@
+body {
+  padding: 0;
+}
 
 .navbar {
   width: 0;
@@ -9,6 +12,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
+
+  height: 100vh;
+  min-height: 100vh;
+  overflow-y: hidden;
 }
 
 .result {
