@@ -181,21 +181,24 @@ pub type Result<T> = std::result::Result<T, RMenuError>;
 impl Args {
     /// Find a specifically named file across xdg config paths
     fn find_xdg_file(&self, name: &str, base: &Option<PathBuf>) -> Option<String> {
-        return base.clone().or_else(|| {
-            xdg::BaseDirectories::with_prefix(XDG_PREFIX)
-                .expect("Failed to read xdg base dirs")
-                .find_config_file(name)
-        }).map(|f| {
-            let f = f.to_string_lossy().to_string();
-            shellexpand::tilde(&f).to_string()
-        });
+        return base
+            .clone()
+            .or_else(|| {
+                xdg::BaseDirectories::with_prefix(XDG_PREFIX)
+                    .expect("Failed to read xdg base dirs")
+                    .find_config_file(name)
+            })
+            .map(|f| {
+                let f = f.to_string_lossy().to_string();
+                shellexpand::tilde(&f).to_string()
+            });
     }
 
     /// Load Configuration File
     pub fn get_config(&self) -> Result<Config> {
         let config = self.find_xdg_file(DEFAULT_CONFIG, &self.config);
 
-        if let Some (path) = config {
+        if let Some(path) = config {
             let config: Config = match read_to_string(path) {
                 Ok(content) => serde_yaml::from_str(&content),
                 Err(err) => {
@@ -251,10 +254,12 @@ impl Args {
     pub fn get_theme(&self) -> String {
         self.find_xdg_file(DEFAULT_THEME, &self.theme)
             .map(read_to_string)
-            .map(|f| f.unwrap_or_else(|err| {
-                log::error!("Failed to load CSS: {err:?}");
-                String::new()
-            }))
+            .map(|f| {
+                f.unwrap_or_else(|err| {
+                    log::error!("Failed to load CSS: {err:?}");
+                    String::new()
+                })
+            })
             .unwrap_or_else(String::new)
     }
 
@@ -263,9 +268,9 @@ impl Args {
         let css = self
             .css
             .clone()
-            .or(c.css.as_ref().map(|s| PathBuf::from(s)));
-        if let Some(css) = css {
-            let path = css.to_string_lossy().to_string();
+            .map(|s| s.to_string_lossy().to_string())
+            .or(c.css.clone());
+        if let Some(path) = css {
             let path = shellexpand::tilde(&path).to_string();
             match read_to_string(&path) {
                 Ok(css) => return css,

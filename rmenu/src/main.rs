@@ -10,7 +10,6 @@ mod state;
 use clap::Parser;
 use rmenu_plugin::{self_exe, Entry};
 
-static CONFIG_DIR: &'static str = "~/.config/rmenu/";
 static DEFAULT_THEME: &'static str = "style.css";
 static DEFAULT_CONFIG: &'static str = "config.yaml";
 static XDG_PREFIX: &'static str = "rmenu";
@@ -54,7 +53,6 @@ fn main() -> cli::Result<()> {
             .iter()
             .any(|e| e.icon.is_some() || e.icon_alt.is_some());
     config.use_comments = config.use_comments && entries.iter().any(|e| e.comment.is_some());
-
 
     let theme = cli.get_theme();
     let css = cli.get_css(&config);

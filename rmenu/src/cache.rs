@@ -3,15 +3,11 @@ use std::fs;
 use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 
-use once_cell::sync::Lazy;
 use rmenu_plugin::Entry;
 use thiserror::Error;
 
 use crate::config::{CacheSetting, PluginConfig};
-use crate::CONFIG_DIR;
-
-static CONFIG_PATH: Lazy<PathBuf> =
-    Lazy::new(|| PathBuf::from(shellexpand::tilde(CONFIG_DIR).to_string()));
+use crate::XDG_PREFIX;
 
 #[derive(Debug, Error)]
 pub enum CacheError {
@@ -29,7 +25,10 @@ pub enum CacheError {
 
 #[inline]
 fn cache_file(name: &str) -> PathBuf {
-    CONFIG_PATH.join(format!("{name}.cache"))
+    xdg::BaseDirectories::with_prefix(XDG_PREFIX)
+        .expect("Failed to read xdg base dirs")
+        .place_cache_file(format!("{name}.cache"))
+        .expect("Failed to write xdg cache dirs")
 }
 
 /// Read Entries from Cache (if Valid and Available)
