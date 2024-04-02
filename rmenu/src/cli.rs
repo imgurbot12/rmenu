@@ -10,7 +10,7 @@ use rmenu_plugin::{Entry, Message};
 use thiserror::Error;
 
 use crate::config::{cfg_replace, Config, Keybind};
-use crate::{DEFAULT_CONFIG, DEFAULT_THEME};
+use crate::{DEFAULT_CONFIG, DEFAULT_THEME, XDG_PREFIX};
 
 /// Allowed Formats for Entry Ingestion
 #[derive(Debug, Clone)]
@@ -179,28 +179,31 @@ pub enum RMenuError {
 pub type Result<T> = std::result::Result<T, RMenuError>;
 
 impl Args {
-    /// Find Configuration Path
-    pub fn find_config(&self) -> PathBuf {
-        self.config.clone().unwrap_or_else(|| {
-            xdg::BaseDirectories::with_prefix("rmenu")
+    /// Find a specifically named file across xdg config paths
+    fn find_xdg_file(&self, name: &str, base: &Option<PathBuf>) -> Option<String> {
+        return base.clone().or_else(|| {
+            xdg::BaseDirectories::with_prefix(XDG_PREFIX)
                 .expect("Failed to read xdg base dirs")
-                .find_config_file(DEFAULT_CONFIG)
-                .unwrap_or_else(PathBuf::new)
-        })
+                .find_config_file(name)
+        }).map(|f| f.to_string_lossy().to_string());
     }
 
     /// Load Configuration File
-    pub fn get_config(&self, path: &PathBuf) -> Result<Config> {
-        let path = path.to_string_lossy().to_string();
-        let path = shellexpand::tilde(&path).to_string();
-        let config: Config = match read_to_string(path) {
-            Ok(content) => serde_yaml::from_str(&content),
-            Err(err) => {
-                log::error!("Failed to Load Config: {err:?}");
-                Ok(Config::default())
-            }
-        }?;
-        Ok(config)
+    pub fn get_config(&self) -> Result<Config> {
+        let config = self.find_xdg_file(DEFAULT_CONFIG, &self.config);
+
+        if let Some (path) = config {
+            let config: Config = match read_to_string(path) {
+                Ok(content) => serde_yaml::from_str(&content),
+                Err(err) => {
+                    log::error!("Failed to Load Config: {err:?}");
+                    Ok(Config::default())
+                }
+            }?;
+            return Ok(config);
+        }
+        log::error!("Failed to Load Config: no file found in xdg config paths");
+        Ok(Config::default())
     }
 
     /// Update Configuration w/ CLI Specified Settings
@@ -242,11 +245,10 @@ impl Args {
     }
 
     /// Load CSS Theme or Default
-    pub fn get_theme(&self, cfgdir: &PathBuf) -> String {
-        let theme = self.theme.clone().or(Some(cfgdir.join(DEFAULT_THEME)));
-        if let Some(theme) = theme {
-            let path = theme.to_string_lossy().to_string();
-            let path = shellexpand::tilde(&path).to_string();
+    pub fn get_theme(&self) -> String {
+        let theme = self.find_xdg_file(DEFAULT_THEME, &self.theme);
+
+        if let Some(path) = theme {
             match read_to_string(&path) {
                 Ok(css) => return css,
                 Err(err) => log::error!("Failed to load CSS: {err:?}"),

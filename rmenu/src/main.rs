@@ -13,6 +13,7 @@ use rmenu_plugin::{self_exe, Entry};
 static CONFIG_DIR: &'static str = "~/.config/rmenu/";
 static DEFAULT_THEME: &'static str = "style.css";
 static DEFAULT_CONFIG: &'static str = "config.yaml";
+static XDG_PREFIX: &'static str = "rmenu";
 static DEFAULT_CSS_CONTENT: &'static str = include_str!("../public/default.css");
 
 /// Application State for GUI
@@ -43,8 +44,7 @@ fn main() -> cli::Result<()> {
 
     // parse cli and retrieve values for app
     let mut cli = cli::Args::parse();
-    let mut cfgpath = cli.find_config();
-    let mut config = cli.get_config(&cfgpath)?;
+    let mut config = cli.get_config()?;
     let entries = cli.get_entries(&mut config)?;
 
     // update config based on cli-settings and entries
@@ -55,10 +55,8 @@ fn main() -> cli::Result<()> {
             .any(|e| e.icon.is_some() || e.icon_alt.is_some());
     config.use_comments = config.use_comments && entries.iter().any(|e| e.comment.is_some());
 
-    // retrieve cfgdir and get theme/css
-    cfgpath.pop();
-    let cfgdir = cfgpath;
-    let theme = cli.get_theme(&cfgdir);
+
+    let theme = cli.get_theme();
     let css = cli.get_css(&config);
 
     // genrate app context and run gui
