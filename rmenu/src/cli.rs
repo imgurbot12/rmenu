@@ -185,7 +185,10 @@ impl Args {
             xdg::BaseDirectories::with_prefix(XDG_PREFIX)
                 .expect("Failed to read xdg base dirs")
                 .find_config_file(name)
-        }).map(|f| f.to_string_lossy().to_string());
+        }).map(|f| {
+            let f = f.to_string_lossy().to_string();
+            shellexpand::tilde(&f).to_string()
+        });
     }
 
     /// Load Configuration File
@@ -246,15 +249,13 @@ impl Args {
 
     /// Load CSS Theme or Default
     pub fn get_theme(&self) -> String {
-        let theme = self.find_xdg_file(DEFAULT_THEME, &self.theme);
-
-        if let Some(path) = theme {
-            match read_to_string(&path) {
-                Ok(css) => return css,
-                Err(err) => log::error!("Failed to load CSS: {err:?}"),
-            }
-        }
-        String::new()
+        self.find_xdg_file(DEFAULT_THEME, &self.theme)
+            .map(read_to_string)
+            .map(|f| f.unwrap_or_else(|err| {
+                log::error!("Failed to load CSS: {err:?}");
+                String::new()
+            }))
+            .unwrap_or_else(String::new)
     }
 
     /// Load Additional CSS or Default
