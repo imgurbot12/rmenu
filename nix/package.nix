@@ -1,42 +1,20 @@
-{ cargo
-, fetchFromGitHub
+{ fetchFromGitHub
 , glib
-, gnused
 , gtk3
 , lib
 , libsoup_3
 , networkmanager
 , pkg-config
 , rustPlatform
-, rustc
-, stdenv
 , webkitgtk_4_1
 , wrapGAppsHook
 }:
 rustPlatform.buildRustPackage rec {
-  version = "1.1.0";
   pname = "rmenu";
+  version = "1.2.0";
 
   src = lib.cleanSource ../.;
-  
-#  src = fetchFromGitHub {
-#    rev = "188f542"; # "v${version}";
-#    owner = "imgurbot12";
-#    repo = pname;
-#    hash = "sha256-IRwYxjyHdP6794pQjyyUmofO8uakMY22pqdFkJZ5Mdo=";
-#  };
 
-  strictDeps = true;
-
-  cargoLock = {
-    lockFile = ../Cargo.lock;
-    outputHashes = {
-      "gio-0.19.0" = "sha256-+PAQNJ9sTk8aKAhA/PLQWDCKDT/cQ+ukdbem7g1J+pU=";
-      "nm-0.4.0" = "sha256-53ipJU10ZhIKIF7PCw5Eo/e/reUK0qpyTyE7uIrCD88=";
-    };
-  };
-
-  
   nativeBuildInputs = [
     pkg-config
     wrapGAppsHook
@@ -48,8 +26,18 @@ rustPlatform.buildRustPackage rec {
     libsoup_3
     networkmanager
     webkitgtk_4_1
-    gnused
   ];
+
+  strictDeps = true;
+
+  cargoLock = {
+    lockFile = ../Cargo.lock;
+    outputHashes = {
+      "gio-0.19.0" = "sha256-+PAQNJ9sTk8aKAhA/PLQWDCKDT/cQ+ukdbem7g1J+pU=";
+      "nm-0.4.0" = "sha256-53ipJU10ZhIKIF7PCw5Eo/e/reUK0qpyTyE7uIrCD88=";
+    };
+  };
+
 
   postInstall = ''
     # copy themes and plugins
@@ -71,21 +59,27 @@ rustPlatform.buildRustPackage rec {
     mv $out/plugins/window $out/plugins/rmenu-window
 
     # fix config and theme
-    mkdir -p $out/etc/xdg/rmenu
-    cp -vf $src/rmenu/public/config.yaml $out/etc/xdg/rmenu/config.yaml
-    sed -i "s@~\/\.config\/rmenu\/themes@$out\/themes@g" $out/etc/xdg/rmenu/config.yaml
-    sed -i "s@~\/\.config\/rmenu@$out\/plugins@g" $out/etc/xdg/rmenu/config.yaml
-    ln -sf  $out/themes/dark.css $out/etc/xdg/rmenu/style.css
+    mkdir -p $out/share/rmenu
+    cp -vf $src/rmenu/public/config.yaml $out/share/rmenu/config.yaml
+    sed -i "s@~\/\.config\/rmenu\/themes@$out\/themes@g" $out/share/rmenu/config.yaml
+    sed -i "s@~\/\.config\/rmenu@$out\/plugins@g" $out/share/rmenu/config.yaml
+    ln -sf  $out/themes/dark.css $out/share/rmenu/style.css
   '';
 
-  doCheck = true;
+  preFixup = ''
+    gappsWrapperArgs+=(
+      --suffix XDG_CONFIG_DIRS : "$out/share"
+    )
+  '';
 
-  meta = with lib; {
-    changelog = "https://github.com/imgurbot12/rmenu/commits/master/";
-    description = "Another customizable Application-Launcher written in Rust ";
+
+  meta = {
+    changelog = "https://github.com/imgurbot12/rmenu/releases/tag/v${version}";
+    description = "Another customizable Application-Launcher written in Rust";
     homepage = "https://github.com/imgurbot12/rmenu";
+    license = lib.licenses.mit;
     mainProgram = "rmenu";
-    maintainers = [ maintainers.grimmauld ];
-    platforms = platforms.linux;
+    maintainers = with lib.maintainers; [ grimmauld ];
+    platforms = lib.platforms.linux;
   };
 }
