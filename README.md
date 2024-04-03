@@ -1,11 +1,5 @@
 ## RMenu
 
-<!--
- TODO: improve documentation:
-  2. explain exchange format and rmenu-build tool
-  3. include more examples including fullscreen/transparent app-window
--->
-
 Another customizable Application-Launcher written in Rust
 
 ### Features
@@ -18,8 +12,18 @@ Another customizable Application-Launcher written in Rust
 
 ### Installation
 
+##### Nix
+
 RMenu now has Nix support thanks to
 [@LordGrimmauld](https://github.com/LordGrimmauld)!
+
+Try it on nix directly via
+
+```bash
+nix run github:imgurbot12/rmenu -- -r drun
+```
+
+##### Other Platforms:
 
 Install Dependencies (Ubuntu)
 
@@ -35,11 +39,13 @@ $ make install
 
 ### Usage
 
-View all available options with the builtin help:
+View all available options with the built-in help:
 
 ```bash
 $ rmenu --help
 ```
+
+##### Plugins
 
 RMenu Comes with a few default plugins.
 
@@ -66,11 +72,13 @@ Or even run plugins in combination if you'd like:
 $ rmenu -r run -r drun
 ```
 
-Custom Menus can also be passed much like Dmenu by passing items via an input.
-The schema follows a standard as defined in [rmenu-plugin](./rmenu-plugin)
+##### Direct Input
+
+Custom Menus can also be passed via `/dev/stdin` or as an input file. The schema
+follows a standard as defined in [rmenu-plugin](./rmenu-plugin)
 
 ```bash
-$ generate-my-menu.sh > input.json
+$ ./examples/rmenu-build.sh > input.json
 $ rmenu -i input.json
 ```
 
@@ -78,8 +86,20 @@ When neither a plugin nor an input are specified, rmenu defaults to reading from
 stdin.
 
 ```bash
-$ generate-my-menu.sh | rmenu
+$ ./examples/rmenu-build.sh | rmenu
 ```
+
+##### Supported Formats
+
+RMenu has two supported input formats: dmenu-like and JSON. JSON is the default
+provided by rmenu and allows for rich configuration and controls for dynamically
+generated menus. You can switch between supported formats with `-f`:
+
+```bash
+$ printf 'foo\nbar\nbaz' | rmenu -f dmenu
+```
+
+Check the [examples](./examples) folder for more examples.
 
 ### Configuration
 
