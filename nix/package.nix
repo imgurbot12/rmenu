@@ -61,7 +61,6 @@ rustPlatform.buildRustPackage rec {
     # fix config and theme
     mkdir -p $out/share/rmenu
     cp -vf $src/rmenu/public/config.yaml $out/share/rmenu/config.yaml
-    sed -i "s@~\/\.config\/rmenu\/themes@$out\/themes@g" $out/share/rmenu/config.yaml
     sed -i "s@~\/\.config\/rmenu@$out@g" $out/share/rmenu/config.yaml
     ln -sf  $out/themes/dark.css $out/share/rmenu/style.css
   '';
@@ -69,6 +68,7 @@ rustPlatform.buildRustPackage rec {
   preFixup = ''
     gappsWrapperArgs+=(
       --suffix XDG_CONFIG_DIRS : "$out/share"
+      --suffix PATH : "$out/bin"
     )
   '';
 
