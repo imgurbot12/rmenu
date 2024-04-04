@@ -19,11 +19,11 @@ window:
 
 # configured plugin settings
 plugins:
-  run:  
-    exec:  ["~/.config/rmenu/rmenu-run"]
+  run:
+    exec:  ["~/.config/rmenu/plugins/rmenu-run"]
     cache: 300
-  drun: 
-    exec:  ["~/.config/rmenu/rmenu-desktop"]
+  drun:
+    exec:  ["~/.config/rmenu/plugins/rmenu-desktop"]
     cache: onlogin
     options:
       css: ~/.config/rmenu/themes/launchpad.css
@@ -36,19 +36,19 @@ plugins:
       key_jump_prev: ["Arrow-Up"]
       key_jump_next: ["Arrow-Down"]
   network:
-    exec:  ["~/.config/rmenu/rmenu-network"]
+    exec:  ["~/.config/rmenu/plugins/rmenu-network"]
     cache: false
     placeholder: "Connect to the Specified Wi-Fi"
   window:
-    exec:  ["~/.config/rmenu/rmenu-window"]
+    exec:  ["~/.config/rmenu/plugins/rmenu-window"]
     cache: false
     placeholder: "Jump to the Specified Window"
   audio:
-    exec:  ["~/.config/rmenu/pactl-audio.sh"]
+    exec:  ["~/.config/rmenu/plugins/pactl-audio.sh"]
     cache: false
     placeholder: "Select an Audio Sink"
   powermenu:
-    exec: ["~/.config/rmenu/powermenu.sh"]
+    exec: ["~/.config/rmenu/plugins/powermenu.sh"]
     cache: false
 
 # custom keybindings

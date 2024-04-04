@@ -31,15 +31,15 @@ package: build deploy
 
 #: locally deploy build-artifcats into their designated locations
 deploy:
-	mkdir -p ${DEST} ${INSTALL}
-	cp -vfr themes ${DEST}/themes
-	cp -vfr other-plugins/* ${DEST}/.
+	mkdir -p ${DEST}/plugins ${INSTALL}
+	cp -vfr themes ${DEST}/.
+	cp -vfr other-plugins/* ${DEST}/plugins/.
 	cp -vf ./target/release/rmenu ${INSTALL}/rmenu
 	cp -vf ./target/release/rmenu-build ${INSTALL}/rmenu-build
-	cp -vf ./target/release/desktop ${DEST}/rmenu-desktop
-	cp -vf ./target/release/run ${DEST}/rmenu-run
-	cp -vf ./target/release/network ${DEST}/rmenu-network
-	cp -vf ./target/release/window ${DEST}/rmenu-window
+	cp -vf ./target/release/desktop ${DEST}/plugins/rmenu-desktop
+	cp -vf ./target/release/run ${DEST}/plugins/rmenu-run
+	cp -vf ./target/release/network ${DEST}/plugins/rmenu-network
+	cp -vf ./target/release/window ${DEST}/plugins/rmenu-window
 	cp -vf ./rmenu/public/config.yaml ${DEST}/config.yaml
 	ln -sf  ${DEST}/themes/dark.css ${DEST}/style.css
 
