@@ -62,7 +62,7 @@ rustPlatform.buildRustPackage rec {
     mkdir -p $out/share/rmenu
     cp -vf $src/rmenu/public/config.yaml $out/share/rmenu/config.yaml
     sed -i "s@~\/\.config\/rmenu\/themes@$out\/themes@g" $out/share/rmenu/config.yaml
-    sed -i "s@~\/\.config\/rmenu@$out\/plugins@g" $out/share/rmenu/config.yaml
+    sed -i "s@~\/\.config\/rmenu@$out@g" $out/share/rmenu/config.yaml
     ln -sf  $out/themes/dark.css $out/share/rmenu/style.css
   '';
 
