@@ -23,6 +23,16 @@ Try it on nix directly via
 nix run github:imgurbot12/rmenu -- -r drun
 ```
 
+Rmenu v1.2.0 is now in nix unstable!
+Install it via:
+
+```bash
+sudo nix-channel --add https://nixos.org/channels/nixpkgs-unstable unstable
+sudo nix-channel --update
+sudo nix-env -iA unstable.rmenu
+```
+
+
 ##### Other Platforms:
 
 Install Dependencies (Ubuntu)
