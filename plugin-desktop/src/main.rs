@@ -8,8 +8,11 @@ use rmenu_plugin::{Action, Entry, Method};
 
 mod icons;
 
+static XDG_HOME_ENV: &'static str = "XDG_DATA_HOME";
 static XDG_DATA_ENV: &'static str = "XDG_DATA_DIRS";
 static XDG_CONFIG_ENV: &'static str = "XDG_CONFIG_HOME";
+
+static XDG_HOME_DEFAULT: &'static str = "~/.local/share";
 static XDG_DATA_DEFAULT: &'static str = "/usr/share:/usr/local/share";
 static XDG_CONFIG_DEFAULT: &'static str = "~/.config";
 
@@ -25,8 +28,9 @@ fn config_dir() -> PathBuf {
 
 /// Retrieve XDG-DATA Directories
 fn data_dirs(dir: &str) -> Vec<PathBuf> {
-    std::env::var(XDG_DATA_ENV)
-        .unwrap_or_else(|_| XDG_DATA_DEFAULT.to_string())
+    let home = std::env::var(XDG_HOME_ENV).unwrap_or_else(|_| XDG_HOME_DEFAULT.to_string());
+    let dirs = std::env::var(XDG_DATA_ENV).unwrap_or_else(|_| XDG_DATA_DEFAULT.to_string());
+    format!("{home}:{dirs}")
         .split(":")
         .map(|p| shellexpand::tilde(p).to_string())
         .map(PathBuf::from)
