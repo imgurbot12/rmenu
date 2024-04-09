@@ -1,5 +1,4 @@
 //! Execution Implementation for Entry Actions
-use std::io::{stdout, Write};
 use std::process::Command;
 use std::{collections::HashMap, os::unix::process::CommandExt};
 
@@ -53,9 +52,7 @@ pub fn execute(action: &Action, term: Option<String>) {
             parse_args(&command)
         }
         Method::Echo(echo) => {
-            if let Err(err) = writeln!(stdout(), "{echo}") {
-                log::error!("failed to write to stdout: {err:?}");
-            };
+            println!("{echo}");
             std::process::exit(0);
         }
     };
