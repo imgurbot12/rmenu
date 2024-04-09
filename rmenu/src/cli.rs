@@ -78,6 +78,12 @@ pub struct Args {
     /// Force enable/disable comments
     #[arg(long)]
     use_comments: Option<bool>,
+    /// Allow Selection by Mouse Hover
+    #[arg(long)]
+    hover_select: Option<bool>,
+    /// Activate Menu Result with Single Click
+    #[arg(long)]
+    single_click: Option<bool>,
 
     // search settings
     /// Enforce Regex Pattern on Search
@@ -220,6 +226,8 @@ impl Args {
         config.page_load = self.page_load.unwrap_or(config.page_load);
         config.use_icons = self.use_icons.unwrap_or(config.use_icons);
         config.use_comments = self.use_icons.unwrap_or(config.use_comments);
+        config.hover_select = self.hover_select.unwrap_or(config.hover_select);
+        config.single_click = self.single_click.unwrap_or(config.single_click);
         // override search settings
         cfg_replace!(config.search.restrict, self.search_restrict);
         cfg_replace!(config.search.min_length, self.search_min_length);

@@ -211,6 +211,11 @@ fn _true() -> bool {
     true
 }
 
+#[inline]
+fn _false() -> bool {
+    false
+}
+
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct SearchConfig {
@@ -248,6 +253,10 @@ pub struct Config {
     pub use_icons: bool,
     #[serde(default = "_true")]
     pub use_comments: bool,
+    #[serde(default = "_false")]
+    pub hover_select: bool,
+    #[serde(default = "_false")]
+    pub single_click: bool,
     pub search: SearchConfig,
     pub plugins: BTreeMap<String, PluginConfig>,
     pub keybinds: KeyConfig,
@@ -264,6 +273,8 @@ impl Default for Config {
             jump_dist: 5,
             use_icons: true,
             use_comments: true,
+            hover_select: false,
+            single_click: false,
             search: Default::default(),
             plugins: Default::default(),
             keybinds: Default::default(),
@@ -310,6 +321,8 @@ impl Config {
         cfg_replace!(self.page_size, options.page_size, true);
         cfg_replace!(self.page_load, options.page_load, true);
         cfg_replace!(self.jump_dist, options.jump_dist, true);
+        cfg_replace!(self.hover_select, options.hover_select, true);
+        cfg_replace!(self.single_click, options.single_click, true);
         // search settings
         cfg_replace!(self.search.placeholder, options.placeholder);
         cfg_replace!(self.search.restrict, options.search_restrict);

@@ -85,6 +85,8 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
         false => "",
     };
     // build sub-actions if present
+    let hover_select = cx.props.state.config().hover_select;
+    let single_click = cx.props.state.config().single_click;
     let actions = cx
         .props
         .entry
@@ -100,7 +102,17 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
             cx.render(rsx! {
                 div {
                     class: "action {act_class}",
-                    onclick: move |_| cx.props.state.set_position(cx.props.index, idx + 1),
+                    onmouseenter: move |_| {
+                        if hover_select {
+                            cx.props.state.set_position(cx.props.index, idx + 1);
+                        }
+                    },
+                    onclick: move |_| {
+                        cx.props.state.set_position(cx.props.index, idx + 1);
+                        if single_click {
+                            cx.props.state.set_event(KeyEvent::Exec);
+                        }
+                    },
                     ondblclick: |_| cx.props.state.set_event(KeyEvent::Exec),
                     div {
                         class: "action-name",
@@ -119,8 +131,17 @@ fn TableEntry<'a>(cx: Scope<'a, GEntry<'a>>) -> Element<'a> {
             div {
                 id: "result-{cx.props.index}",
                 class: "result {result_classes} {multi_classes}",
-                // onmouseenter: |_| cx.props.state.set_position(cx.props.index, 0),
-                onclick: |_| cx.props.state.set_position(cx.props.index, 0),
+                onmouseenter: move |_| {
+                    if hover_select {
+                        cx.props.state.set_position(cx.props.index, 0);
+                    }
+                },
+                onclick: move |_| {
+                    cx.props.state.set_position(cx.props.index, 0);
+                    if single_click {
+                        cx.props.state.set_event(KeyEvent::Exec);
+                    }
+                },
                 ondblclick: |_| cx.props.state.set_event(KeyEvent::Exec),
                 if cx.props.state.config().use_icons {
                     cx.render(rsx! {

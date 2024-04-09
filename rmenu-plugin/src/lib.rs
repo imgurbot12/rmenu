@@ -94,6 +94,10 @@ pub struct Options {
     pub page_load: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub jump_dist: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hover_select: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub single_click: Option<bool>,
     // search settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placeholder: Option<String>,
