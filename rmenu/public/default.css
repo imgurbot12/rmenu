@@ -23,11 +23,15 @@ body>div {
 }
 
 .results {
-  cursor: pointer;
   overflow-y: auto;
   height: calc(100vh - 60px);
   min-height: calc(100vh - 60px);
   scroll-margin-top: 60px;
+}
+
+.result,
+.action {
+  cursor: pointer;
 }
 
 .selected {
