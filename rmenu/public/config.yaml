@@ -27,6 +27,8 @@ plugins:
     cache: onlogin
     options:
       css: ~/.config/rmenu/themes/launchpad.css
+      hover_select: true
+      single_click: true
       page_size: 500
       transparent: true
       window_width: 1200
