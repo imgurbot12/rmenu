@@ -178,21 +178,22 @@ struct OptionArgs {
     pub key_jump_prev: Option<Vec<String>>,
     // window settings
     /// Override Window Title
-    #[arg(short, long)]
+    #[arg(long)]
     pub title: Option<String>,
     /// Override Window Deocration Settings
-    #[arg(short, long)]
+    #[arg(long)]
     pub deocorate: Option<bool>,
     /// Override Window Fullscreen Settings
-    #[arg(short, long)]
+    #[arg(long)]
     pub fullscreen: Option<bool>,
     /// Override Window Tranparent Settings
-    #[arg(short, long)]
+    #[arg(long)]
     pub transparent: Option<bool>,
     /// Override Window Width
     #[arg(short = 'w', long)]
     pub window_width: Option<f64>,
     /// Override Window Height
+    #[arg(short = 'h', long)]
     pub window_height: Option<f64>,
 }
 
