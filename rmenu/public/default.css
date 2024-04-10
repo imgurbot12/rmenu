@@ -29,6 +29,11 @@ body>div {
   scroll-margin-top: 60px;
 }
 
+.result,
+.action {
+  cursor: pointer;
+}
+
 .selected {
   background-color: lightblue;
 }

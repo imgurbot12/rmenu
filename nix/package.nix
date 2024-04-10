@@ -11,7 +11,7 @@
 }:
 rustPlatform.buildRustPackage rec {
   pname = "rmenu";
-  version = "1.2.0";
+  version = "1.2.1";
 
   src = lib.cleanSource ../.;
 

@@ -6,6 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rmenu-plugin = { version = "0.0.1", path = "../rmenu-plugin" }
+rmenu-plugin = { version = "0.0.2", path = "../rmenu-plugin" }
 serde_json = "1.0.103"
 walkdir = "2.3.3"

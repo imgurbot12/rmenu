@@ -120,15 +120,24 @@ impl Into<Entry> for EntryArgs {
 /// Arguments for Options CLI Command
 #[derive(Debug, Args)]
 struct OptionArgs {
-    /// Override Applicaiton Theme
+    /// Override Applicaiton CSS
     #[arg(short = 'C', long)]
     pub css: Option<String>,
+    /// Override Default View Page-Size
     #[arg(short = 's', long)]
     pub page_size: Option<usize>,
+    /// Override Default Percentage Completion Before Page Load
     #[arg(short = 'l', long)]
     pub page_load: Option<f64>,
+    /// Override Selection Jump Distance
     #[arg(short = 'd', long)]
     pub jump_dist: Option<usize>,
+    /// Override Select on Hover Option
+    #[arg(long)]
+    pub hover_select: Option<bool>,
+    /// Override Single-Click Activation Option
+    #[arg(long)]
+    pub single_click: Option<bool>,
     // search settings
     /// Override Default Placeholder
     #[arg(short = 'P', long)]
@@ -169,16 +178,16 @@ struct OptionArgs {
     pub key_jump_prev: Option<Vec<String>>,
     // window settings
     /// Override Window Title
-    #[arg(short, long)]
+    #[arg(long)]
     pub title: Option<String>,
     /// Override Window Deocration Settings
-    #[arg(short, long)]
+    #[arg(long)]
     pub deocorate: Option<bool>,
     /// Override Window Fullscreen Settings
-    #[arg(short, long)]
+    #[arg(long)]
     pub fullscreen: Option<bool>,
     /// Override Window Tranparent Settings
-    #[arg(short, long)]
+    #[arg(long)]
     pub transparent: Option<bool>,
     /// Override Window Width
     #[arg(short = 'w', long)]
@@ -196,6 +205,8 @@ impl Into<Options> for OptionArgs {
             page_load: self.page_load,
             jump_dist: self.jump_dist,
             placeholder: self.placeholder,
+            hover_select: self.hover_select,
+            single_click: self.single_click,
             search_restrict: self.search_restrict,
             search_min_length: self.search_min_length,
             search_max_length: self.search_max_length,
