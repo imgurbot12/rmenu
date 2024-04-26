@@ -10,7 +10,7 @@ use rmenu_plugin::{Entry, Message};
 use thiserror::Error;
 
 use crate::config::{cfg_replace, Config, Keybind};
-use crate::{DEFAULT_CONFIG, DEFAULT_THEME, XDG_PREFIX};
+use crate::{DEFAULT_CONFIG, DEFAULT_THEME, ENV_ACTIVE_PLUGINS, XDG_PREFIX};
 
 /// Allowed Formats for Entry Ingestion
 #[derive(Debug, Clone)]
@@ -404,5 +404,40 @@ impl Args {
         }
         entries.extend(self.load_plugins(config)?);
         Ok(entries)
+    }
+
+    /// Configure Environment Variables for Multi-Stage Execution
+    pub fn set_env(&self) {
+        let mut running = self.run.join(",");
+        if let Ok(already_running) = std::env::var(ENV_ACTIVE_PLUGINS) {
+            running = format!("{running},{already_running}");
+        }
+        std::env::set_var(ENV_ACTIVE_PLUGINS, running);
+    }
+
+    /// Load Settings from Environment Variables for Multi-Stage Execution
+    pub fn load_env(&mut self, config: &mut Config) -> Result<()> {
+        let env_plugins = std::env::var(ENV_ACTIVE_PLUGINS).unwrap_or_default();
+        let active_plugins: Vec<&str> = env_plugins
+            .split(",")
+            .map(|s| s.trim())
+            .filter(|s| !s.is_empty())
+            .collect();
+        for name in active_plugins {
+            // retrieve plugin configuration
+            log::info!("reloading plugin configuration for {name:?}");
+            let plugin = config
+                .plugins
+                .get(name)
+                .cloned()
+                .ok_or_else(|| RMenuError::NoSuchPlugin(name.to_owned()))?;
+            // update config w/ plugin options when available
+            if let Some(options) = plugin.options.as_ref() {
+                config
+                    .update(options)
+                    .map_err(|e| RMenuError::InvalidKeybind(e))?;
+            }
+        }
+        Ok(())
     }
 }
