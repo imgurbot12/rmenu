@@ -52,6 +52,9 @@ plugins:
   powermenu:
     exec: ["~/.config/rmenu/plugins/powermenu.sh"]
     cache: false
+    options:
+      hover_select: true
+      single_click: true
 
 # custom keybindings
 keybinds:
