@@ -11,6 +11,7 @@ mod icons;
 static XDG_HOME_ENV: &'static str = "XDG_DATA_HOME";
 static XDG_DATA_ENV: &'static str = "XDG_DATA_DIRS";
 static XDG_CONFIG_ENV: &'static str = "XDG_CONFIG_HOME";
+static XDG_CURRENT_DESKTOP_ENV: &'static str = "XDG_CURRENT_DESKTOP";
 
 static XDG_HOME_DEFAULT: &'static str = "~/.local/share";
 static XDG_DATA_DEFAULT: &'static str = "/usr/share:/usr/local/share";
@@ -49,6 +50,19 @@ fn fix_exec(exec: &str) -> String {
 fn parse_desktop(path: &PathBuf, locale: Option<&str>) -> Option<Entry> {
     let bytes = read_to_string(path).ok()?;
     let entry = DesktopEntry::decode(&path, &bytes).ok()?;
+
+    // no-display entries should not be shown
+    if entry.no_display() {
+        return None;
+    }
+
+    // if an entry only is shown on a specific desktop, check whether desktop is set and matches,
+    // otherwise return None
+    let de = std::env::var(XDG_CURRENT_DESKTOP_ENV);
+    if entry.only_show_in().is_some_and(|e| !(de.is_ok() && de.unwrap() == e.to_string())){
+        return None;
+    }
+
     let name = entry.name(locale)?.to_string();
     let icon = entry.icon().map(|i| i.to_string());
     let comment = entry.comment(locale).map(|s| s.to_string());
