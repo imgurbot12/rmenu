@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use freedesktop_desktop_entry::{DesktopEntry, Iter};
 use once_cell::sync::Lazy;
+use rayon::prelude::*;
 use regex::Regex;
 use rmenu_plugin::{Action, Entry, Method};
 
@@ -59,7 +60,10 @@ fn parse_desktop(path: &PathBuf, locale: Option<&str>) -> Option<Entry> {
     // if an entry only is shown on a specific desktop, check whether desktop is set and matches,
     // otherwise return None
     let de = std::env::var(XDG_CURRENT_DESKTOP_ENV);
-    if entry.only_show_in().is_some_and(|e| !(de.is_ok() && de.unwrap() == e.to_string())){
+    if entry
+        .only_show_in()
+        .is_some_and(|e| !(de.is_ok() && de.unwrap() == e.to_string()))
+    {
         return None;
     }
 
@@ -133,10 +137,10 @@ fn main() {
         })
         .collect();
 
-    desktops.sort_by_cached_key(|e| e.name.to_owned());
-    desktops
+    desktops.par_sort_by_cached_key(|e| e.name.to_owned());
+    let _: Vec<()> = desktops
         .into_iter()
         .filter_map(|e| serde_json::to_string(&e).ok())
         .map(|s| println!("{}", s))
-        .last();
+        .collect();
 }

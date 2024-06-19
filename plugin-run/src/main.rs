@@ -1,6 +1,7 @@
 use std::env;
 use std::os::unix::fs::PermissionsExt;
 
+use rayon::prelude::*;
 use rmenu_plugin::Entry;
 use walkdir::{DirEntry, WalkDir};
 
@@ -49,16 +50,16 @@ fn find_binaries(path: String) -> Vec<Entry> {
 fn main() {
     // collect entries for sorting
     let mut entries: Vec<Entry> = bin_paths()
-        .into_iter()
+        .into_par_iter()
         .map(find_binaries)
         .flatten()
         .collect();
     // sort entries and render to json
-    entries.sort_by_cached_key(|e| e.name.clone());
-    entries
-        .into_iter()
+    entries.par_sort_by_cached_key(|e| e.name.clone());
+    let _: Vec<()> = entries
+        .into_par_iter()
         .map(|e| serde_json::to_string(&e))
         .filter_map(|r| r.ok())
         .map(|s| println!("{}", s))
-        .last();
+        .collect();
 }
