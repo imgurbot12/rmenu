@@ -97,6 +97,16 @@ impl Context {
         bind.iter().any(|b| mods.contains(b.mods) && &b.key == key)
     }
 
+    fn scroll(&self, pos: usize) {
+        let js = format!(
+            r#"
+            let element = document.getElementById('result-{pos}');
+            setTimeout(() => element.scrollIntoView(false), 1000);
+        "#
+        );
+        eval(&js);
+    }
+
     pub fn handle_keybinds(&self, event: KeyboardEvent, index: usize, pos: &mut Pos) {
         let code = event.code();
         let modifiers = event.modifiers();
@@ -107,8 +117,11 @@ impl Context {
             std::process::exit(0);
         } else if self.matches(&keybinds.move_next, &modifiers, &code) {
             self.move_next(index, pos);
+            self.scroll(pos.with(|p| p.pos) + 3);
         } else if self.matches(&keybinds.move_prev, &modifiers, &code) {
             self.move_prev(pos);
+            let pos = pos.with(|p| p.pos);
+            self.scroll(if pos <= 3 { pos } else { pos + 3 })
         } else if self.matches(&keybinds.open_menu, &modifiers, &code) {
         } else if self.matches(&keybinds.close_menu, &modifiers, &code) {
         } else if self.matches(&keybinds.jump_next, &modifiers, &code) {

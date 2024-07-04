@@ -50,7 +50,7 @@ fn gui_entry(mut row: Row) -> Element {
         div {
             class: "result-entry",
             div {
-                id: "result-{row.entry_index}",
+                id: "result-{row.search_index}",
                 class: "result {rclass}",
                 // actions
                 onmouseenter: move |_| {
@@ -89,6 +89,13 @@ fn gui_entry(mut row: Row) -> Element {
     }
 }
 
+const FUCKED: &'static str = r#"
+    document.getElementById('results').addEventListener("keydown", (e) => {
+        console.log('prevented scroll!');
+        e.preventDefault();
+    });
+"#;
+
 fn gui_main() -> Element {
     // build context and signals for state
     let ctx = use_context::<Ctx>();
@@ -110,9 +117,9 @@ fn gui_main() -> Element {
         // calculate current entry
         let pos = position.with(|p| p.pos);
         let index = results.with(|r| r[pos]);
-        let entry = context.get_entry(index);
+        // let entry = context.get_entry(index);
         // update keybinds
-        context.handle_keybinds(e, entry, &mut position);
+        context.handle_keybinds(e, index, &mut position);
         // scroll when required
         let script = format!("document.getElementById(`result-{index}`).scrollIntoView(false)");
         eval(&script);
@@ -130,6 +137,7 @@ fn gui_main() -> Element {
             id: "content",
             class: "content",
             onkeydown: keydown,
+            prevent_default: "keydown",
             div {
                 id: "navbar",
                 class: "navbar",
@@ -139,11 +147,13 @@ fn gui_main() -> Element {
                     pattern: pattern,
                     maxlength: maxlength,
                     oninput: move |e| search.set(e.value()),
+                    prevent_default: "keydown",
                 }
             }
             div {
                 id: "results",
                 class: "results",
+                prevent_default: "keydown",
                 for (pos, index) in results().iter().take(max_result).enumerate() {
                     gui_entry {
                         key: "{pos}-{index}",
@@ -154,5 +164,6 @@ fn gui_main() -> Element {
                 }
             }
         }
+        script { "{FUCKED}" }
     }
 }
