@@ -4,6 +4,51 @@ use rmenu_plugin::Entry;
 use crate::config::{Config, Keybind};
 use crate::search::new_searchfn;
 
+type Threads = Vec<std::thread::JoinHandle<()>>;
+
+/// Builder Object for Constructing Context
+#[derive(Debug, Default)]
+pub struct ContextBuilder {
+    css: String,
+    theme: String,
+    config: Option<Config>,
+    entries: Vec<Entry>,
+    threads: Threads,
+}
+
+impl ContextBuilder {
+    pub fn with_css(mut self, css: String) -> Self {
+        self.css = css;
+        self
+    }
+    pub fn with_theme(mut self, theme: String) -> Self {
+        self.theme = theme;
+        self
+    }
+    pub fn with_config(mut self, config: Config) -> Self {
+        self.config = Some(config);
+        self
+    }
+    pub fn with_entries(mut self, entries: Vec<Entry>) -> Self {
+        self.entries = entries;
+        self
+    }
+    pub fn with_bg_threads(mut self, threads: Threads) -> Self {
+        self.threads = threads;
+        self
+    }
+    pub fn build(self) -> Context {
+        Context {
+            threads: self.threads,
+            num_results: self.entries.len(),
+            entries: self.entries,
+            config: self.config.unwrap_or_default(),
+            theme: self.theme,
+            css: self.css,
+        }
+    }
+}
+
 /// Global Position Tracker
 #[derive(Default)]
 pub struct Position {
@@ -32,23 +77,10 @@ pub struct Context {
     // search results and controls
     entries: Vec<Entry>,
     num_results: usize,
+    threads: Threads,
 }
 
 impl Context {
-    pub fn new(css: String, theme: String, config: Config, entries: Vec<Entry>) -> Self {
-        println!(
-            "page_size: {}, threshold: {}",
-            config.page_size, config.page_load
-        );
-        Self {
-            num_results: entries.len(),
-            entries,
-            config,
-            theme,
-            css,
-        }
-    }
-
     // ** Search Results Management  **
 
     pub fn all_results(&self) -> Vec<usize> {
@@ -98,37 +130,41 @@ impl Context {
     }
 
     fn scroll(&self, pos: usize) {
-        let js = format!(
-            r#"
-            let element = document.getElementById('result-{pos}');
-            setTimeout(() => element.scrollIntoView(false), 1000);
-        "#
-        );
+        let js = format!("document.getElementById('result-{pos}').scrollIntoView(false)");
         eval(&js);
     }
+    fn scroll_up(&self, pos: &Pos) {
+        let pos = pos.with(|p| p.pos);
+        self.scroll(if pos <= 3 { pos } else { pos + 3 });
+    }
+    fn scroll_down(&self, pos: &Pos) {
+        self.scroll(pos.with(|p| p.pos) + 3);
+    }
 
-    pub fn handle_keybinds(&self, event: KeyboardEvent, index: usize, pos: &mut Pos) {
+    pub fn handle_keybinds(&self, event: KeyboardEvent, index: usize, pos: &mut Pos) -> bool {
         let code = event.code();
         let modifiers = event.modifiers();
         let keybinds = &self.config.keybinds;
         if self.matches(&keybinds.exec, &modifiers, &code) {
             println!("exec!");
         } else if self.matches(&keybinds.exit, &modifiers, &code) {
-            std::process::exit(0);
+            return true;
         } else if self.matches(&keybinds.move_next, &modifiers, &code) {
             self.move_next(index, pos);
-            self.scroll(pos.with(|p| p.pos) + 3);
+            self.scroll_down(pos);
         } else if self.matches(&keybinds.move_prev, &modifiers, &code) {
             self.move_prev(pos);
-            let pos = pos.with(|p| p.pos);
-            self.scroll(if pos <= 3 { pos } else { pos + 3 })
+            self.scroll_up(pos);
         } else if self.matches(&keybinds.open_menu, &modifiers, &code) {
         } else if self.matches(&keybinds.close_menu, &modifiers, &code) {
         } else if self.matches(&keybinds.jump_next, &modifiers, &code) {
             self.move_down(self.config.jump_dist, pos);
+            self.scroll_down(pos);
         } else if self.matches(&keybinds.jump_prev, &modifiers, &code) {
             self.move_up(self.config.jump_dist, pos);
+            self.scroll_up(pos);
         }
+        false
     }
 
     // ** Position Management **
@@ -140,7 +176,7 @@ impl Context {
         })
     }
     pub fn move_down(&self, dist: usize, pos: &mut Pos) {
-        let max_pos = self.num_results;
+        let max_pos = std::cmp::max(self.num_results, 1) - 1;
         pos.with_mut(move |p| {
             p.subpos = 0;
             p.pos = std::cmp::min(p.pos + dist, max_pos);
@@ -159,7 +195,15 @@ impl Context {
         if subpos > 0 && subpos < entry.actions.len() - 1 {
             return pos.with_mut(|p| p.subpos += 1);
         }
-        println!("moving down 1");
         self.move_down(1, pos);
+    }
+
+    //** Cleanup  **
+
+    pub fn cleanup(&mut self) {
+        while !self.threads.is_empty() {
+            let thread = self.threads.pop().unwrap();
+            let _ = thread.join();
+        }
     }
 }

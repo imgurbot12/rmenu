@@ -5,18 +5,29 @@ use dioxus::prelude::*;
 mod entry;
 mod state;
 
-use crate::App;
+pub use state::ContextBuilder;
 use state::{Context, Position};
 
 const DEFAULT_CSS_CONTENT: &'static str = include_str!("../../public/default.css");
 
 type Ctx = Rc<RefCell<Context>>;
 
-pub fn run(app: App) {
-    let ctx = Context::new(app.css, app.theme, app.config, app.entries);
+pub fn run(ctx: Context) {
+    let window = dioxus_desktop::WindowBuilder::default()
+        .with_title(ctx.config.window.title.clone())
+        .with_focused(ctx.config.window.focus)
+        .with_decorations(ctx.config.window.decorate)
+        .with_transparent(ctx.config.window.transparent)
+        .with_always_on_top(ctx.config.window.always_top)
+        .with_inner_size(ctx.config.window.logical_size())
+        .with_fullscreen(ctx.config.window.get_fullscreen())
+        .with_theme(ctx.config.window.get_theme());
+    let config = dioxus_desktop::Config::default().with_window(window);
     LaunchBuilder::desktop()
+        .with_cfg(config)
         .with_context(Rc::new(RefCell::new(ctx)))
         .launch(gui_main);
+    println!("hello world!");
 }
 
 #[derive(Clone, Props)]
@@ -89,40 +100,54 @@ fn gui_entry(mut row: Row) -> Element {
     }
 }
 
-const FUCKED: &'static str = r#"
-    document.getElementById('results').addEventListener("keydown", (e) => {
-        console.log('prevented scroll!');
-        e.preventDefault();
-    });
-"#;
-
 fn gui_main() -> Element {
     // build context and signals for state
     let ctx = use_context::<Ctx>();
+    let window = dioxus_desktop::use_window();
     let mut search = use_signal(String::new);
     let mut position = use_signal(Position::default);
     let mut results = use_signal(|| ctx.borrow().all_results());
 
+    // refocus on input
+    let js = format!("setTimeout(() => {{ document.getElementById('search').focus() }}, 100)");
+    eval(&js);
+
+    // configure exit cleanup function
+    use_drop(move || {
+        let ctx = consume_context::<Ctx>();
+        ctx.borrow_mut().cleanup();
+    });
+
     // update search results on search
+    let effect_ctx = use_context::<Ctx>();
     use_effect(move || {
-        let ctx = use_context::<Ctx>();
         let search = search();
-        results.set(ctx.borrow_mut().set_search(&search, &mut position));
+        results.set(effect_ctx.borrow_mut().set_search(&search, &mut position));
     });
 
     // declare keyboard handler
+    let key_ctx = use_context::<Ctx>();
     let keydown = move |e: KeyboardEvent| {
-        let ctx = use_context::<Ctx>();
-        let context = ctx.borrow();
-        // calculate current entry
+        let context = key_ctx.borrow();
+        // calculate current entry index
         let pos = position.with(|p| p.pos);
-        let index = results.with(|r| r[pos]);
-        // let entry = context.get_entry(index);
-        // update keybinds
-        context.handle_keybinds(e, index, &mut position);
-        // scroll when required
-        let script = format!("document.getElementById(`result-{index}`).scrollIntoView(false)");
-        eval(&script);
+        let index = results.with(|r| r.get(pos).cloned().unwrap_or(0));
+        // handle events
+        let quit = context.handle_keybinds(e, index, &mut position);
+        // handle quit event
+        if quit {
+            window.set_visible(false);
+            spawn(async move {
+                // wait for window to vanish
+                let time = std::time::Duration::from_millis(50);
+                let window = dioxus_desktop::use_window();
+                while window.is_visible() {
+                    tokio::time::sleep(time).await;
+                }
+                // actually close app after it becomes invisible
+                window.close();
+            });
+        }
     };
 
     let context = ctx.borrow();
@@ -137,7 +162,6 @@ fn gui_main() -> Element {
             id: "content",
             class: "content",
             onkeydown: keydown,
-            prevent_default: "keydown",
             div {
                 id: "navbar",
                 class: "navbar",
@@ -147,13 +171,11 @@ fn gui_main() -> Element {
                     pattern: pattern,
                     maxlength: maxlength,
                     oninput: move |e| search.set(e.value()),
-                    prevent_default: "keydown",
                 }
             }
             div {
                 id: "results",
                 class: "results",
-                prevent_default: "keydown",
                 for (pos, index) in results().iter().take(max_result).enumerate() {
                     gui_entry {
                         key: "{pos}-{index}",
@@ -164,6 +186,5 @@ fn gui_main() -> Element {
                 }
             }
         }
-        script { "{FUCKED}" }
     }
 }

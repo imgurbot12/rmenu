@@ -23,6 +23,7 @@ pub struct Config {
     pub hover_select: bool,
     pub single_click: bool,
     pub search: SearchConfig,
+    pub window: WindowConfig,
     pub keybinds: KeyConfig,
 }
 
@@ -37,6 +38,7 @@ impl Default for Config {
             hover_select: false,
             single_click: false,
             search: Default::default(),
+            window: Default::default(),
             keybinds: Default::default(),
         }
     }
@@ -73,7 +75,76 @@ impl Default for SearchConfig {
     }
 }
 
-/// Global GUI Keybind Settings Options
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct WindowSize {
+    width: f64,
+    height: f64,
+}
+
+impl Default for WindowSize {
+    fn default() -> Self {
+        Self {
+            width: 800.0,
+            height: 400.0,
+        }
+    }
+}
+
+/// Window Configuration Settings
+#[derive(Debug, PartialEq, Deserialize)]
+pub struct WindowConfig {
+    pub title: String,
+    pub size: WindowSize,
+    #[serde(default = "_true")]
+    pub focus: bool,
+    pub decorate: bool,
+    pub transparent: bool,
+    #[serde(default = "_true")]
+    pub always_top: bool,
+    pub fullscreen: Option<bool>,
+    pub dark_mode: Option<bool>,
+}
+
+impl WindowConfig {
+    pub fn logical_size(&self) -> dioxus_desktop::LogicalSize<f64> {
+        dioxus_desktop::LogicalSize {
+            width: self.size.width,
+            height: self.size.height,
+        }
+    }
+    pub fn get_fullscreen(&self) -> Option<dioxus_desktop::tao::window::Fullscreen> {
+        self.fullscreen.and_then(|fs| match fs {
+            true => Some(dioxus_desktop::tao::window::Fullscreen::Borderless(None)),
+            false => None,
+        })
+    }
+    pub fn get_theme(&self) -> Option<dioxus_desktop::tao::window::Theme> {
+        match self.dark_mode {
+            Some(dark) => match dark {
+                true => Some(dioxus_desktop::tao::window::Theme::Dark),
+                false => Some(dioxus_desktop::tao::window::Theme::Light),
+            },
+            None => None,
+        }
+    }
+}
+
+impl Default for WindowConfig {
+    fn default() -> Self {
+        Self {
+            title: "RMenu - Application Launcher".to_owned(),
+            size: Default::default(),
+            focus: true,
+            decorate: false,
+            transparent: false,
+            always_top: true,
+            fullscreen: None,
+            dark_mode: None,
+        }
+    }
+}
+
+/// GUI Keybind Settings Options
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct KeyConfig {
