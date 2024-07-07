@@ -3,6 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use dioxus::prelude::*;
 
 mod entry;
+mod image;
 mod state;
 
 pub use state::ContextBuilder;
@@ -27,7 +28,6 @@ pub fn run(ctx: Context) {
         .with_cfg(config)
         .with_context(Rc::new(RefCell::new(ctx)))
         .launch(gui_main);
-    println!("hello world!");
 }
 
 #[derive(Clone, Props)]
@@ -43,6 +43,22 @@ impl PartialEq for Row {
     }
 }
 
+#[inline]
+fn render_image(image: Option<&String>, alt: Option<&String>) -> Element {
+    if let Some(img) = image {
+        if img.ends_with(".svg") {
+            if let Some(content) = image::convert_svg(img.to_owned()) {
+                return rsx! { img { class: "image", src: "{content}" } };
+            }
+        }
+        if image::image_exists(img.to_owned()) {
+            return rsx! { img { class: "image", src: "{img}" } };
+        }
+    }
+    let alt = alt.map(|s| s.as_str()).unwrap_or_else(|| "?");
+    return rsx! { div { class: "icon_alt", dangerous_inner_html: "{alt}" } };
+}
+
 fn gui_entry(mut row: Row) -> Element {
     // retrieve entry information based on index
     let ctx = use_context::<Ctx>();
@@ -51,15 +67,18 @@ fn gui_entry(mut row: Row) -> Element {
     let hover_select = context.config.hover_select;
     let (pos, subpos) = row.position.with(|p| (p.pos, p.subpos));
     // build element from entry
-    let aclass = (pos == row.search_index && subpos > 0)
-        .then_some("active")
-        .unwrap_or_default();
+    let single_click = context.config.single_click;
+    let action_select = pos == row.search_index && subpos > 0;
+    let aclass = action_select.then_some("active").unwrap_or_default();
     let rclass = (pos == row.search_index && subpos == 0)
         .then_some("selected")
         .unwrap_or_default();
+    let result_ctx1 = use_context::<Ctx>();
+    let result_ctx2 = use_context::<Ctx>();
     rsx! {
         div {
             class: "result-entry",
+            // main-entry
             div {
                 id: "result-{row.search_index}",
                 class: "result {rclass}",
@@ -71,11 +90,24 @@ fn gui_entry(mut row: Row) -> Element {
                 },
                 onclick: move |_| {
                     row.position.with_mut(|p| p.set(row.search_index, 0));
+                    if single_click {
+                        let pos = row.position.clone();
+                        result_ctx1.borrow().execute(row.entry_index, &pos);
+                    }
                 },
                 ondoubleclick: move |_| {
-                    // row.position.with_mut(|p| p.set(row.search_index, 0));
+                    let pos = row.position.clone();
+                    result_ctx2.borrow().execute(row.entry_index, &pos);
                 },
                 // content
+                if context.config.use_icons {
+                    {rsx! {
+                        div {
+                            class: "icon",
+                            {render_image(entry.icon.as_ref(), entry.icon_alt.as_ref())},
+                        }
+                    }}
+                },
                 if context.config.use_comments {
                     {rsx! {
                         div {
@@ -94,6 +126,52 @@ fn gui_entry(mut row: Row) -> Element {
                             dangerous_inner_html: "{entry.name}"
                         }
                     }}
+                }
+            }
+            // actions
+            div {
+                id: "result-{row.search_index}-actions",
+                class: "actions {aclass}",
+                for (idx, action, classes, ctx, ctx2) in entry.actions
+                    .iter()
+                    .enumerate()
+                    .skip(1)
+                    .map(|(idx, act)| {
+                        let ctx = use_context::<Ctx>();
+                        let ctx2 = use_context::<Ctx>();
+                        let classes = (idx == subpos).then_some("selected").unwrap_or_default();
+                        (idx, act, classes, ctx, ctx2)
+                    })
+                {
+                    div {
+                        class: "action {classes}",
+                        // actions
+                        onmouseenter: move |_| {
+                            if hover_select {
+                                row.position.with_mut(|p| p.set(row.search_index, idx));
+                            }
+                        },
+                        onclick: move |_| {
+                            row.position.with_mut(|p| p.set(row.search_index, 0));
+                            if single_click {
+                                let pos = row.position.clone();
+                                ctx.borrow().execute(row.entry_index, &pos);
+                            }
+                        },
+                        ondoubleclick: move |_| {
+                            let pos = row.position.clone();
+                            ctx2.borrow().execute(row.entry_index, &pos);
+                        },
+                        // content
+                        div {
+                            class: "action-name",
+                            dangerous_inner_html: "{action.name}"
+                        }
+                        div {
+                            class: "action-comment",
+                            dangerous_inner_html: action.comment.as_ref().map(|s| s.as_str()).unwrap_or(""),
+                        }
+                    }
                 }
             }
         }

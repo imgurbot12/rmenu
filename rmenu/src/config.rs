@@ -1,4 +1,8 @@
+///! File Based Configuration for RMenu
+use std::collections::BTreeMap;
 use std::str::FromStr;
+
+use rmenu_plugin::Options;
 
 use dioxus::events::{Code, Modifiers};
 use serde::de::Error;
@@ -13,6 +17,8 @@ fn _true() -> bool {
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
 pub struct Config {
+    pub css: Option<String>,
+    pub terminal: Option<String>,
     pub page_size: usize,
     pub page_load: f64,
     pub jump_dist: usize,
@@ -25,11 +31,14 @@ pub struct Config {
     pub search: SearchConfig,
     pub window: WindowConfig,
     pub keybinds: KeyConfig,
+    pub plugins: BTreeMap<String, PluginConfig>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
+            css: None,
+            terminal: None,
             page_size: 50,
             page_load: 0.8,
             jump_dist: 5,
@@ -40,7 +49,41 @@ impl Default for Config {
             search: Default::default(),
             window: Default::default(),
             keybinds: Default::default(),
+            plugins: Default::default(),
         }
+    }
+}
+
+impl Config {
+    /// Update Configuration from Options Object
+    pub fn update(&mut self, options: &Options) -> Result<(), String> {
+        cfg_replace!(self.css, options.css);
+        cfg_replace!(self.page_size, options.page_size, true);
+        cfg_replace!(self.page_load, options.page_load, true);
+        cfg_replace!(self.jump_dist, options.jump_dist, true);
+        cfg_replace!(self.hover_select, options.hover_select, true);
+        cfg_replace!(self.single_click, options.single_click, true);
+        // search settings
+        cfg_replace!(self.search.placeholder, options.placeholder);
+        cfg_replace!(self.search.restrict, options.search_restrict);
+        cfg_replace!(self.search.max_length, options.search_max_length, true);
+        // keybind settings
+        cfg_keybind!(self.keybinds.exec, options.key_exec);
+        cfg_keybind!(self.keybinds.exit, options.key_exit);
+        cfg_keybind!(self.keybinds.move_next, options.key_move_next);
+        cfg_keybind!(self.keybinds.move_prev, options.key_move_prev);
+        cfg_keybind!(self.keybinds.open_menu, options.key_open_menu);
+        cfg_keybind!(self.keybinds.close_menu, options.key_close_menu);
+        cfg_keybind!(self.keybinds.jump_next, options.key_jump_next);
+        cfg_keybind!(self.keybinds.jump_prev, options.key_jump_prev);
+        // window settings
+        cfg_replace!(self.window.title, options.title, true);
+        cfg_replace!(self.window.decorate, options.decorate, true);
+        cfg_replace!(self.window.fullscreen, options.fullscreen);
+        cfg_replace!(self.window.transparent, options.transparent, true);
+        cfg_replace!(self.window.size.width, options.window_width, true);
+        cfg_replace!(self.window.size.height, options.window_height, true);
+        Ok(())
     }
 }
 
@@ -77,8 +120,8 @@ impl Default for SearchConfig {
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct WindowSize {
-    width: f64,
-    height: f64,
+    pub width: f64,
+    pub height: f64,
 }
 
 impl Default for WindowSize {
@@ -144,6 +187,50 @@ impl Default for WindowConfig {
     }
 }
 
+/// Cache Settings for Configured RMenu Plugins
+#[derive(Debug, Clone, PartialEq)]
+pub enum CacheSetting {
+    NoCache,
+    Never,
+    OnLogin,
+    AfterSeconds(usize),
+}
+
+impl Default for CacheSetting {
+    fn default() -> Self {
+        Self::NoCache
+    }
+}
+
+impl FromStr for CacheSetting {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "never" => Ok(Self::Never),
+            "false" | "disable" | "disabled" => Ok(Self::NoCache),
+            "true" | "login" | "onlogin" => Ok(Self::OnLogin),
+            _ => {
+                let secs: usize = s
+                    .parse()
+                    .map_err(|_| format!("Invalid Cache Setting: {s:?}"))?;
+                Ok(Self::AfterSeconds(secs))
+            }
+        }
+    }
+}
+
+/// RMenu Data-Source Plugin Configuration
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct PluginConfig {
+    pub exec: Vec<String>,
+    #[serde(default)]
+    pub cache: CacheSetting,
+    #[serde(default)]
+    pub placeholder: Option<String>,
+    #[serde(default)]
+    pub options: Option<Options>,
+}
+
 /// GUI Keybind Settings Options
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default)]
@@ -165,8 +252,8 @@ impl Default for KeyConfig {
             exit: vec![Keybind::new(Code::Escape)],
             move_next: vec![Keybind::new(Code::ArrowDown)],
             move_prev: vec![Keybind::new(Code::ArrowUp)],
-            open_menu: vec![],
-            close_menu: vec![],
+            open_menu: vec![Keybind::new(Code::ArrowRight)],
+            close_menu: vec![Keybind::new(Code::ArrowLeft)],
             jump_next: vec![Keybind::new(Code::PageDown)],
             jump_prev: vec![Keybind::new(Code::PageUp)],
         };
@@ -245,4 +332,35 @@ macro_rules! de_fromstr {
 }
 
 // implement `Deserialize` using `FromStr`
+de_fromstr!(CacheSetting);
 de_fromstr!(Keybind);
+
+macro_rules! cfg_replace {
+    ($key:expr, $repl:expr) => {
+        if $repl.is_some() {
+            $key = $repl.clone();
+        }
+    };
+    ($key:expr, $repl:expr, true) => {
+        if let Some(value) = $repl.as_ref() {
+            $key = value.to_owned();
+        }
+    };
+}
+
+macro_rules! cfg_keybind {
+    ($key:expr, $repl:expr) => {
+        if let Some(bind_strings) = $repl.as_ref() {
+            let mut keybinds = vec![];
+            for bind_str in bind_strings.iter() {
+                let bind = Keybind::from_str(bind_str)?;
+                keybinds.push(bind);
+            }
+            $key = keybinds;
+        }
+    };
+}
+
+pub(crate) use cfg_keybind;
+pub(crate) use cfg_replace;
+pub(crate) use de_fromstr;

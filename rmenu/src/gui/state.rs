@@ -113,7 +113,7 @@ impl Context {
         // increment total results by 1 page if beyond threshold
         let md = if ratio < threshold { 1 } else { 2 };
         let limit = (page + md) * page_size;
-        println!("pos: {pos}, page: {page}, ratio: {ratio}, limit: {limit}");
+        log::debug!("pos: {pos}, page: {page}, ratio: {ratio}, limit: {limit}");
         limit
     }
 
@@ -141,12 +141,25 @@ impl Context {
         self.scroll(pos.with(|p| p.pos) + 3);
     }
 
+    pub fn execute(&self, index: usize, pos: &Pos) {
+        let entry = self.get_entry(index);
+        let (pos, subpos) = pos.with(|p| (p.pos, p.subpos));
+        log::debug!("execute-pos {pos} {subpos}");
+        let Some(action) = entry.actions.get(subpos) else {
+            return;
+        };
+        log::debug!("execute-entry {entry:?}");
+        log::debug!("execute-action: {action:?}");
+        crate::exec::execute(action, self.config.terminal.clone());
+    }
+
     pub fn handle_keybinds(&self, event: KeyboardEvent, index: usize, pos: &mut Pos) -> bool {
         let code = event.code();
         let modifiers = event.modifiers();
         let keybinds = &self.config.keybinds;
         if self.matches(&keybinds.exec, &modifiers, &code) {
-            println!("exec!");
+            self.execute(index, pos);
+            return true;
         } else if self.matches(&keybinds.exit, &modifiers, &code) {
             return true;
         } else if self.matches(&keybinds.move_next, &modifiers, &code) {
@@ -156,7 +169,9 @@ impl Context {
             self.move_prev(pos);
             self.scroll_up(pos);
         } else if self.matches(&keybinds.open_menu, &modifiers, &code) {
+            self.open_menu(index, pos);
         } else if self.matches(&keybinds.close_menu, &modifiers, &code) {
+            self.close_menu(pos);
         } else if self.matches(&keybinds.jump_next, &modifiers, &code) {
             self.move_down(self.config.jump_dist, pos);
             self.scroll_down(pos);
@@ -197,10 +212,21 @@ impl Context {
         }
         self.move_down(1, pos);
     }
+    pub fn open_menu(&self, index: usize, pos: &mut Pos) {
+        let entry = self.get_entry(index);
+        if entry.actions.len() > 1 {
+            pos.with_mut(|s| s.subpos += 1);
+        }
+    }
+    #[inline]
+    pub fn close_menu(&self, pos: &mut Pos) {
+        pos.with_mut(|s| s.subpos = 0);
+    }
 
     //** Cleanup  **
 
     pub fn cleanup(&mut self) {
+        log::debug!("cleaning up {} threads", self.threads.len());
         while !self.threads.is_empty() {
             let thread = self.threads.pop().unwrap();
             let _ = thread.join();

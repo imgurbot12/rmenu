@@ -1,35 +1,61 @@
+mod cache;
+mod cli;
 mod config;
+mod exec;
 mod gui;
 mod search;
 
-use rmenu_plugin::Entry;
+use clap::Parser;
 
-#[derive(Debug)]
-pub struct App {
-    css: String,
-    theme: String,
-    config: config::Config,
-    entries: Vec<Entry>,
-}
+static DEFAULT_THEME: &'static str = "style.css";
+static DEFAULT_CONFIG: &'static str = "config.yaml";
+static XDG_PREFIX: &'static str = "rmenu";
 
-fn main() {
-    // temp building of app
-    let s = std::fs::read_to_string("/home/andrew/.cache/rmenu/drun.cache").unwrap();
-    let entries: Vec<Entry> = serde_json::from_str(&s).unwrap();
-    let mut config = config::Config::default();
-    config.search.max_length = 5;
+static ENV_BIN: &'static str = "RMENU";
+static ENV_ACTIVE_PLUGINS: &'static str = "RMENU_ACTIVE_PLUGINS";
 
-    let test = std::thread::spawn(move || {
-        println!("running thread!");
-        std::thread::sleep(std::time::Duration::from_secs(3));
-        println!("exiting!");
-    });
+//TODO: remove min-length from search options in rmenu-lib
+
+fn main() -> cli::Result<()> {
+    env_logger::init();
+
+    // export self to environment for other scripts
+    let exe = rmenu_plugin::self_exe();
+    std::env::set_var(ENV_BIN, exe);
+
+    // parse cli and retrieve values for app
+    let mut cli = cli::Args::parse();
+    let mut config = cli.get_config()?;
+
+    let entries = cli.get_entries(&mut config)?;
+
+    // update config based on cli-settings and entries
+    config = cli.update_config(config);
+    config.use_icons = config.use_icons
+        && entries
+            .iter()
+            .any(|e| e.icon.is_some() || e.icon_alt.is_some());
+    config.use_comments = config.use_comments && entries.iter().any(|e| e.comment.is_some());
+
+    // load additional configuration settings from env
+    cli.load_env(&mut config)?;
+
+    // configure css theme and css overrides
+    let css = cli.get_css(&config);
+    let theme = cli.get_theme();
+
+    // set environment variables before running app
+    cli.set_env();
 
     // run gui
     let context = gui::ContextBuilder::default()
+        .with_css(css)
+        .with_theme(theme)
         .with_config(config)
         .with_entries(entries)
-        .with_bg_threads(vec![test])
+        .with_bg_threads(cli.threads)
         .build();
-    gui::run(context)
+    gui::run(context);
+
+    Ok(())
 }
