@@ -341,6 +341,7 @@ impl Args {
             match crate::cache::read_cache(&name, &plugin) {
                 Err(err) => log::error!("cache read failed: {err:?}"),
                 Ok(cached) => {
+                    log::debug!("plugin {name:?} loaded entries from cache");
                     entries.extend(cached);
                     continue;
                 }
@@ -355,6 +356,7 @@ impl Args {
                 .get(0)
                 .ok_or_else(|| RMenuError::InvalidPlugin(name.to_owned()))?;
             // spawn command
+            log::debug!("plugin {name:?} reading from command output");
             let mut command = Command::new(main)
                 .args(&args[1..])
                 .stdout(Stdio::piped())

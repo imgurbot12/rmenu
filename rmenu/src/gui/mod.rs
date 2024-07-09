@@ -23,7 +23,9 @@ pub fn run(ctx: Context) {
         .with_inner_size(ctx.config.window.logical_size())
         .with_fullscreen(ctx.config.window.get_fullscreen())
         .with_theme(ctx.config.window.get_theme());
-    let config = dioxus_desktop::Config::default().with_window(window);
+    let config = dioxus_desktop::Config::default()
+        .with_window(window)
+        .with_menu(None);
     LaunchBuilder::desktop()
         .with_cfg(config)
         .with_context(Rc::new(RefCell::new(ctx)))

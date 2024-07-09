@@ -48,6 +48,7 @@ fn main() -> cli::Result<()> {
     cli.set_env();
 
     // run gui
+    log::debug!("launching gui");
     let context = gui::ContextBuilder::default()
         .with_css(css)
         .with_theme(theme)
