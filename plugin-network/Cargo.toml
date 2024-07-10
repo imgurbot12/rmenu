@@ -9,9 +9,9 @@ edition = "2021"
 anyhow = "1.0.86"
 async-std = "1.12.0"
 clap = { version = "4.5.4", features = ["derive"] }
-dioxus = "0.5.1"
+dioxus = { version = "0.5.1", features = ["desktop"] }
 dioxus-desktop = "0.5.1"
-dioxus-free-icons = { version = "0.8.5", features = ["font-awesome-regular"] }
+dioxus-free-icons = { version = "0.8.6", features = ["font-awesome-regular"] }
 dioxus-html = "0.5.1"
 env_logger = "0.11.3"
 futures-channel = "0.3.30"

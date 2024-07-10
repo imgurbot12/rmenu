@@ -97,7 +97,7 @@ fn main() -> Result<()> {
             let connected = context.block_on(try_connect_ap(ssid.clone(), timeout))?;
             if !connected {
                 log::info!("Spawning GUI to complete AP Login");
-                gui::run_app(&ssid, timeout.unwrap_or(30));
+                gui::run(ssid, timeout.unwrap_or(30));
             }
         }
     }

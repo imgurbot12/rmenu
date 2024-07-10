@@ -26,7 +26,6 @@ pub struct Manager {
 /// AccessPoint Information
 #[derive(Debug)]
 pub struct AccessPoint {
-    pub in_use: bool,
     pub ssid: String,
     pub rate: u32,
     pub signal: u8,
@@ -267,7 +266,6 @@ impl Manager {
             access.insert(
                 ssid.to_owned(),
                 AccessPoint {
-                    in_use: is_active,
                     ssid,
                     rate,
                     signal,
