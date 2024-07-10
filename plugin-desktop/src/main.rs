@@ -1,7 +1,9 @@
 use std::fs::read_to_string;
 use std::path::PathBuf;
 
+use clap::Parser;
 use freedesktop_desktop_entry::{DesktopEntry, Iter};
+use itertools::Itertools;
 use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use regex::Regex;
@@ -117,7 +119,15 @@ fn assign_icon(icon: String, map: &icons::IconMap) -> Option<String> {
     Some(icon)
 }
 
+#[derive(Debug, Parser)]
+struct Cli {
+    /// Only Allow Unique Desktop Entries
+    #[clap(short, long)]
+    non_unique: bool,
+}
+
 fn main() {
+    let cli = Cli::parse();
     let locale = Some("en");
     let sizes = vec![64, 32, 96, 22, 128];
 
@@ -130,6 +140,13 @@ fn main() {
     let app_paths = data_dirs("applications");
     let mut desktops: Vec<Entry> = Iter::new(app_paths)
         .into_iter()
+        .unique_by(|f| match cli.non_unique {
+            true => f.to_str().map(|s| s.to_owned()),
+            false => f
+                .file_name()
+                .and_then(|n| n.to_str())
+                .map(|s| s.to_string()),
+        })
         .filter_map(|f| parse_desktop(&f, locale))
         .map(|mut e| {
             e.icon = e.icon.and_then(|s| assign_icon(s, &icons));
