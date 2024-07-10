@@ -116,10 +116,10 @@ fn assign_icon(icon: String, map: &icons::IconMap) -> Option<String> {
 
 #[derive(Debug, Parser)]
 struct Cli {
-    /// Only Allow Unique Desktop Entries
+    /// Allow non-unique desktop entries
     #[clap(short, long)]
     non_unique: bool,
-    /// Locale Override
+    /// Specify preferred desktop entry locale
     #[clap(short, long, default_value = "en")]
     locale: String,
 }
