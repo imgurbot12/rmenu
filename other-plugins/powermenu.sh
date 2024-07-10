@@ -42,6 +42,18 @@ gen_confirm() {
   rmenu-build entry -n "$2" -I "$1" -a "`rmenu-build action "$SELF confirm '$2:$3'"`"
 }
 
+#: desc => determine which logout command to use based on window manager
+get_logout_cmd() {
+  case "$XDG_CURRENT_DESKTOP" in
+    "sway") echo "sway exit" ;;
+    "Hyprland") echo "hyprctl dispatch exit" ;;
+    *)
+      session=`loginctl session-status | head -n 1 | awk '{print $1}'`
+      echo "loginctl terminate-session $session"
+      ;;
+  esac
+}
+
 #: desc => generate action-entry
 #: usage => $icon $name $command $do-confirm
 action() {
@@ -69,6 +81,6 @@ case "$1" in
     action "⏻" "Shutdown" "systemctl poweroff" "$confirm"
     action "" "Reboot"   "systemctl reboot"   "$confirm"
     action "⏾" "Suspend"  "systemctl suspend"  "$confirm"
-    action "" "Log Out"  "sway exit"          "$confirm"
+    action "" "Log Out"  "`get_logout_cmd`"   "$confirm"
     ;;
 esac
