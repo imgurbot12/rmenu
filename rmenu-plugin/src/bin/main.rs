@@ -145,9 +145,6 @@ struct OptionArgs {
     /// Override Search Restriction
     #[arg(short = 'r', long)]
     pub search_restrict: Option<String>,
-    /// Override Minimum Search Length
-    #[arg(short = 'm', long)]
-    pub search_min_length: Option<usize>,
     /// Override Maximum Search Length
     #[arg(short = 'M', long)]
     pub search_max_length: Option<usize>,
@@ -208,7 +205,6 @@ impl Into<Options> for OptionArgs {
             hover_select: self.hover_select,
             single_click: self.single_click,
             search_restrict: self.search_restrict,
-            search_min_length: self.search_min_length,
             search_max_length: self.search_max_length,
             key_exec: self.key_exec,
             key_exit: self.key_exit,

@@ -104,8 +104,6 @@ pub struct Options {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub search_restrict: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub search_min_length: Option<usize>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub search_max_length: Option<usize>,
     // key settings
     #[serde(skip_serializing_if = "Option::is_none")]
