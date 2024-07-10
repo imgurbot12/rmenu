@@ -1,4 +1,3 @@
-use std::fs::read_to_string;
 use std::path::PathBuf;
 
 use clap::Parser;
@@ -50,28 +49,25 @@ fn fix_exec(exec: &str) -> String {
 }
 
 /// Parse XDG Desktop Entry into RMenu Entry
-fn parse_desktop(path: &PathBuf, locale: Option<&str>) -> Option<Entry> {
-    let bytes = read_to_string(path).ok()?;
-    let entry = DesktopEntry::decode(&path, &bytes).ok()?;
-
-    // no-display entries should not be shown
+fn parse_desktop(path: PathBuf, locales: &[&str]) -> Option<Entry> {
+    let entry = DesktopEntry::from_path(path, locales).ok()?;
+    // hide `NoDisplay` entries
     if entry.no_display() {
         return None;
     }
-
-    // if an entry only is shown on a specific desktop, check whether desktop is set and matches,
-    // otherwise return None
-    let de = std::env::var(XDG_CURRENT_DESKTOP_ENV);
-    if entry
-        .only_show_in()
-        .is_some_and(|e| !(de.is_ok() && de.unwrap() == e.to_string()))
-    {
-        return None;
+    // hide entries restricted by `OnlyShowIn`
+    if let Ok(de) = std::env::var(XDG_CURRENT_DESKTOP_ENV) {
+        if entry
+            .only_show_in()
+            .is_some_and(|only| only.contains(&de.as_str()))
+        {
+            return None;
+        };
     }
-
-    let name = entry.name(locale)?.to_string();
+    // parse desktop entry into rmenu entry
+    let name = entry.name(locales)?.to_string();
     let icon = entry.icon().map(|i| i.to_string());
-    let comment = entry.comment(locale).map(|s| s.to_string());
+    let comment = entry.comment(locales).map(|s| s.to_string());
     let terminal = entry.terminal();
     let mut actions = match entry.exec() {
         Some(exec) => vec![Action {
@@ -84,12 +80,11 @@ fn parse_desktop(path: &PathBuf, locale: Option<&str>) -> Option<Entry> {
     actions.extend(
         entry
             .actions()
-            .unwrap_or("")
-            .split(";")
+            .unwrap_or_default()
             .into_iter()
             .filter(|a| a.len() > 0)
             .filter_map(|a| {
-                let name = entry.action_name(a, locale)?;
+                let name = entry.action_name(a, locales)?;
                 let exec = entry.action_exec(a)?;
                 Some(Action {
                     name: name.to_string(),
@@ -124,17 +119,20 @@ struct Cli {
     /// Only Allow Unique Desktop Entries
     #[clap(short, long)]
     non_unique: bool,
+    /// Locale Override
+    #[clap(short, long, default_value = "en")]
+    locale: String,
 }
 
 fn main() {
     let cli = Cli::parse();
-    let locale = Some("en");
+    let locales = &[cli.locale.as_str()];
     let sizes = vec![64, 32, 96, 22, 128];
 
     // collect icons
     let cfg = config_dir();
-    let spec = icons::IconSpec::standard(&cfg, sizes);
-    let icons = icons::collect_icons(spec);
+    let spec = icons::IconSpec::standard(&cfg, sizes, locales);
+    let icons = icons::collect_icons(spec, locales);
 
     // collect applications
     let app_paths = data_dirs("applications");
@@ -147,7 +145,7 @@ fn main() {
                 .and_then(|n| n.to_str())
                 .map(|s| s.to_string()),
         })
-        .filter_map(|f| parse_desktop(&f, locale))
+        .filter_map(|f| parse_desktop(f, locales))
         .map(|mut e| {
             e.icon = e.icon.and_then(|s| assign_icon(s, &icons));
             e
