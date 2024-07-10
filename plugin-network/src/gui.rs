@@ -25,7 +25,9 @@ pub fn run(ssid: String, timeout: u32) {
         .with_focused(true)
         .with_decorations(false)
         .with_always_on_top(true);
-    let config = dioxus_desktop::Config::new().with_window(window);
+    let config = dioxus_desktop::Config::new()
+        .with_menu(None)
+        .with_window(window);
     let context = Context { ssid, timeout };
     LaunchBuilder::desktop()
         .with_cfg(config)
