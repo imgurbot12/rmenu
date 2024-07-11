@@ -40,6 +40,7 @@ impl ContextBuilder {
     }
     pub fn build(self) -> Context {
         Context {
+            quit: false,
             threads: self.threads,
             num_results: self.entries.len(),
             entries: self.entries,
@@ -101,6 +102,7 @@ type Pos = Signal<Position>;
 
 /// Contain and Track Search Results
 pub struct Context {
+    pub quit: bool,
     pub css: String,
     pub theme: String,
     pub config: Config,
@@ -171,7 +173,7 @@ impl Context {
         self.scroll(pos.with(|p| p.pos) + 3);
     }
 
-    pub fn execute(&self, index: usize, pos: &Pos) {
+    pub fn execute(&mut self, index: usize, pos: &Pos) {
         let entry = self.get_entry(index);
         let (pos, subpos) = pos.with(|p| (p.pos, p.subpos));
         log::debug!("execute-pos {pos} {subpos}");
@@ -181,17 +183,17 @@ impl Context {
         log::debug!("execute-entry {entry:?}");
         log::debug!("execute-action: {action:?}");
         crate::exec::execute(action, self.config.terminal.clone());
+        self.quit = true;
     }
 
-    pub fn handle_keybinds(&self, event: KeyboardEvent, index: usize, pos: &mut Pos) -> bool {
+    pub fn handle_keybinds(&mut self, event: KeyboardEvent, index: usize, pos: &mut Pos) {
         let code = event.code();
         let modifiers = event.modifiers();
         let keybinds = &self.config.keybinds;
         if self.matches(&keybinds.exec, &modifiers, &code) {
             self.execute(index, pos);
-            return true;
         } else if self.matches(&keybinds.exit, &modifiers, &code) {
-            return true;
+            self.quit = true;
         } else if self.matches(&keybinds.move_next, &modifiers, &code) {
             self.move_next(index, pos);
             self.scroll_down(pos);
@@ -209,7 +211,6 @@ impl Context {
             self.move_up(self.config.jump_dist, pos);
             self.scroll_up(pos);
         }
-        false
     }
 
     // ** Position Management **

@@ -36,7 +36,6 @@ pub fn run(ctx: Context) {
 fn gui_main() -> Element {
     // build context and signals for state
     let ctx = use_context::<Ctx>();
-    let window = dioxus_desktop::use_window();
     let mut search = use_signal(String::new);
     let mut position = use_signal(Position::default);
     let mut results = use_signal(|| ctx.borrow().all_results());
@@ -60,9 +59,10 @@ fn gui_main() -> Element {
     });
 
     // declare keyboard handler
+    let window = dioxus_desktop::use_window();
     let key_ctx = use_context::<Ctx>();
     let keydown = move |e: KeyboardEvent| {
-        let context = key_ctx.borrow();
+        let mut context = key_ctx.borrow_mut();
         // suport console key
         #[cfg(debug_assertions)]
         if e.code() == Code::Backquote {
@@ -73,24 +73,26 @@ fn gui_main() -> Element {
         let pos = position.with(|p| p.pos);
         let index = results.with(|r| r.get(pos).cloned().unwrap_or(0));
         // handle events
-        let quit = context.handle_keybinds(e, index, &mut position);
-        // handle quit event
-        if quit {
-            window.set_visible(false);
-            spawn(async move {
-                // wait for window to vanish
-                let time = std::time::Duration::from_millis(50);
-                let window = dioxus_desktop::use_window();
-                while window.is_visible() {
-                    tokio::time::sleep(time).await;
-                }
-                // actually close app after it becomes invisible
-                window.close();
-            });
-        }
+        context.handle_keybinds(e, index, &mut position);
     };
 
+    // handle quit event
+    let window = dioxus_desktop::use_window();
     let context = ctx.borrow();
+    if context.quit {
+        window.set_visible(false);
+        spawn(async move {
+            // wait for window to vanish
+            let time = std::time::Duration::from_millis(50);
+            let window = dioxus_desktop::use_window();
+            while window.is_visible() {
+                tokio::time::sleep(time).await;
+            }
+            // actually close app after it becomes invisible
+            window.close();
+        });
+    }
+
     let pattern = context.config.search.restrict.clone();
     let maxlength = context.config.search.max_length as i64;
     let max_result = context.calc_limit(&position);
@@ -213,13 +215,13 @@ fn gui_entry(mut row: Row) -> Element {
                     row.position.with_mut(|p| p.set(row.search_index, 0));
                     if single_click && !menu_active {
                         let pos = row.position.clone();
-                        result_ctx1.borrow().execute(row.entry_index, &pos);
+                        result_ctx1.borrow_mut().execute(row.entry_index, &pos);
                     }
                 },
                 ondoubleclick: move |_| {
                     if !menu_active {
                         let pos = row.position.clone();
-                        result_ctx2.borrow().execute(row.entry_index, &pos);
+                        result_ctx2.borrow_mut().execute(row.entry_index, &pos);
                     }
                 },
                 // content
@@ -278,12 +280,12 @@ fn gui_entry(mut row: Row) -> Element {
                             row.position.with_mut(|p| p.set(row.search_index, 0));
                             if single_click {
                                 let pos = row.position.clone();
-                                ctx.borrow().execute(row.entry_index, &pos);
+                                ctx.borrow_mut().execute(row.entry_index, &pos);
                             }
                         },
                         ondoubleclick: move |_| {
                             let pos = row.position.clone();
-                            ctx2.borrow().execute(row.entry_index, &pos);
+                            ctx2.borrow_mut().execute(row.entry_index, &pos);
                         },
                         // content
                         div {
@@ -331,7 +333,7 @@ fn context_menu(ctx_menu: Signal<ContextMenu>, position: Signal<Position>) -> El
                             onclick: move |_| {
                                 position.with_mut(|p| p.subpos = idx);
                                 let pos = position.clone();
-                                ctx.borrow().execute(index, &pos);
+                                ctx.borrow_mut().execute(index, &pos);
                             },
                             "{name}"
                         }
