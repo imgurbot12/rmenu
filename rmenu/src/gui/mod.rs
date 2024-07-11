@@ -74,7 +74,6 @@ fn gui_main() -> Element {
         let index = results.with(|r| r.get(pos).cloned().unwrap_or(0));
         // handle events
         let quit = context.handle_keybinds(e, index, &mut position);
-        // if e.code() == Code::
         // handle quit event
         if quit {
             window.set_visible(false);
@@ -134,10 +133,7 @@ fn gui_main() -> Element {
             }
         }
         // custom context menu
-        context_menu {
-            ctx_menu,
-            position,
-        }
+        context_menu { ctx_menu, position }
     }
 }
 
