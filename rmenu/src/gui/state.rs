@@ -194,6 +194,7 @@ impl Context {
             self.execute(index, pos);
         } else if self.matches(&keybinds.exit, &modifiers, &code) {
             self.quit = true;
+            pos.with_mut(|_| {});
         } else if self.matches(&keybinds.move_next, &modifiers, &code) {
             self.move_next(index, pos);
             self.scroll_down(pos);
