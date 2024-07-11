@@ -7,7 +7,7 @@ mod image;
 mod state;
 
 pub use state::ContextBuilder;
-use state::{Context, Position};
+use state::{Context, ContextMenu, Position};
 
 const DEFAULT_CSS_CONTENT: &'static str = include_str!("../../public/default.css");
 
@@ -25,15 +25,125 @@ pub fn run(ctx: Context) {
         .with_theme(ctx.config.window.get_theme());
     let config = dioxus_desktop::Config::default()
         .with_window(window)
-        .with_menu(None);
+        .with_menu(None)
+        .with_disable_context_menu(true);
     LaunchBuilder::desktop()
         .with_cfg(config)
         .with_context(Rc::new(RefCell::new(ctx)))
         .launch(gui_main);
 }
 
+fn gui_main() -> Element {
+    // build context and signals for state
+    let ctx = use_context::<Ctx>();
+    let window = dioxus_desktop::use_window();
+    let mut search = use_signal(String::new);
+    let mut position = use_signal(Position::default);
+    let mut results = use_signal(|| ctx.borrow().all_results());
+    let mut ctx_menu = use_signal(ContextMenu::default);
+
+    // refocus on input
+    let js = format!("setTimeout(() => {{ document.getElementById('search').focus() }}, 100)");
+    eval(&js);
+
+    // configure exit cleanup function
+    use_drop(move || {
+        let ctx = consume_context::<Ctx>();
+        ctx.borrow_mut().cleanup();
+    });
+
+    // update search results on search
+    let effect_ctx = use_context::<Ctx>();
+    use_effect(move || {
+        let search = search();
+        results.set(effect_ctx.borrow_mut().set_search(&search, &mut position));
+    });
+
+    // declare keyboard handler
+    let key_ctx = use_context::<Ctx>();
+    let keydown = move |e: KeyboardEvent| {
+        let context = key_ctx.borrow();
+        // suport console key
+        #[cfg(debug_assertions)]
+        if e.code() == Code::Backquote {
+            window.devtool();
+            return;
+        }
+        // calculate current entry index
+        let pos = position.with(|p| p.pos);
+        let index = results.with(|r| r.get(pos).cloned().unwrap_or(0));
+        // handle events
+        let quit = context.handle_keybinds(e, index, &mut position);
+        // if e.code() == Code::
+        // handle quit event
+        if quit {
+            window.set_visible(false);
+            spawn(async move {
+                // wait for window to vanish
+                let time = std::time::Duration::from_millis(50);
+                let window = dioxus_desktop::use_window();
+                while window.is_visible() {
+                    tokio::time::sleep(time).await;
+                }
+                // actually close app after it becomes invisible
+                window.close();
+            });
+        }
+    };
+
+    let context = ctx.borrow();
+    let pattern = context.config.search.restrict.clone();
+    let maxlength = context.config.search.max_length as i64;
+    let max_result = context.calc_limit(&position);
+    rsx! {
+        style { "{DEFAULT_CSS_CONTENT}" }
+        style { "{context.theme}" }
+        style { "{context.css}" }
+        // menu content
+        div {
+            id: "content",
+            class: "content",
+            onclick: move |_| {
+                ctx_menu.with_mut(|m| m.reset());
+            },
+            onkeydown: keydown,
+            prevent_default: "contextmenu",
+            div {
+                id: "navbar",
+                class: "navbar",
+                input {
+                    id: "search",
+                    value: "{search}",
+                    pattern: pattern,
+                    maxlength: maxlength,
+                    oninput: move |e| search.set(e.value()),
+                }
+            }
+            div {
+                id: "results",
+                class: "results",
+                for (pos, index) in results().iter().take(max_result).enumerate() {
+                    gui_entry {
+                        key: "{pos}-{index}",
+                        ctx_menu,
+                        position,
+                        search_index: pos,
+                        entry_index: *index,
+                    }
+                }
+            }
+        }
+        // custom context menu
+        context_menu {
+            ctx_menu,
+            position,
+        }
+    }
+}
+
 #[derive(Clone, Props)]
 struct Row {
+    ctx_menu: Signal<ContextMenu>,
     position: Signal<Position>,
     search_index: usize,
     entry_index: usize,
@@ -70,6 +180,7 @@ fn gui_entry(mut row: Row) -> Element {
     let (pos, subpos) = row.position.with(|p| (p.pos, p.subpos));
     // build element from entry
     let single_click = context.config.single_click;
+    let context_menu = context.config.context_menu;
     let action_select = pos == row.search_index && subpos > 0;
     let aclass = action_select.then_some("active").unwrap_or_default();
     let rclass = (pos == row.search_index && subpos == 0)
@@ -77,6 +188,7 @@ fn gui_entry(mut row: Row) -> Element {
         .unwrap_or_default();
     let result_ctx1 = use_context::<Ctx>();
     let result_ctx2 = use_context::<Ctx>();
+    let menu_active = row.ctx_menu.with(|m| m.is_active());
     rsx! {
         div {
             class: "result-entry",
@@ -85,21 +197,34 @@ fn gui_entry(mut row: Row) -> Element {
                 id: "result-{row.search_index}",
                 class: "result {rclass}",
                 // actions
+                oncontextmenu: move |e| {
+                    if context_menu {
+                        let mouse: MouseData = e
+                            .downcast::<SerializedMouseData>()
+                            .cloned()
+                            .unwrap()
+                            .into();
+                        let coords = mouse.page_coordinates();
+                        row.ctx_menu.with_mut(|c| c.set(row.entry_index, coords));
+                    }
+                },
                 onmouseenter: move |_| {
-                    if hover_select {
+                    if hover_select && !menu_active {
                         row.position.with_mut(|p| p.set(row.search_index, 0));
                     }
                 },
                 onclick: move |_| {
                     row.position.with_mut(|p| p.set(row.search_index, 0));
-                    if single_click {
+                    if single_click && !menu_active {
                         let pos = row.position.clone();
                         result_ctx1.borrow().execute(row.entry_index, &pos);
                     }
                 },
                 ondoubleclick: move |_| {
-                    let pos = row.position.clone();
-                    result_ctx2.borrow().execute(row.entry_index, &pos);
+                    if !menu_active {
+                        let pos = row.position.clone();
+                        result_ctx2.borrow().execute(row.entry_index, &pos);
+                    }
                 },
                 // content
                 if context.config.use_icons {
@@ -180,88 +305,40 @@ fn gui_entry(mut row: Row) -> Element {
     }
 }
 
-fn gui_main() -> Element {
-    // build context and signals for state
+#[component]
+fn context_menu(ctx_menu: Signal<ContextMenu>, position: Signal<Position>) -> Element {
     let ctx = use_context::<Ctx>();
-    let window = dioxus_desktop::use_window();
-    let mut search = use_signal(String::new);
-    let mut position = use_signal(Position::default);
-    let mut results = use_signal(|| ctx.borrow().all_results());
-
-    // refocus on input
-    let js = format!("setTimeout(() => {{ document.getElementById('search').focus() }}, 100)");
-    eval(&js);
-
-    // configure exit cleanup function
-    use_drop(move || {
-        let ctx = consume_context::<Ctx>();
-        ctx.borrow_mut().cleanup();
-    });
-
-    // update search results on search
-    let effect_ctx = use_context::<Ctx>();
-    use_effect(move || {
-        let search = search();
-        results.set(effect_ctx.borrow_mut().set_search(&search, &mut position));
-    });
-
-    // declare keyboard handler
-    let key_ctx = use_context::<Ctx>();
-    let keydown = move |e: KeyboardEvent| {
-        let context = key_ctx.borrow();
-        // calculate current entry index
-        let pos = position.with(|p| p.pos);
-        let index = results.with(|r| r.get(pos).cloned().unwrap_or(0));
-        // handle events
-        let quit = context.handle_keybinds(e, index, &mut position);
-        // handle quit event
-        if quit {
-            window.set_visible(false);
-            spawn(async move {
-                // wait for window to vanish
-                let time = std::time::Duration::from_millis(50);
-                let window = dioxus_desktop::use_window();
-                while window.is_visible() {
-                    tokio::time::sleep(time).await;
-                }
-                // actually close app after it becomes invisible
-                window.close();
-            });
-        }
-    };
-
     let context = ctx.borrow();
-    let pattern = context.config.search.restrict.clone();
-    let maxlength = context.config.search.max_length as i64;
-    let max_result = context.calc_limit(&position);
+    let index = ctx_menu.with(|c| c.entry.unwrap_or(0));
+    let entry = context.get_entry(index);
     rsx! {
-        style { "{DEFAULT_CSS_CONTENT}" }
-        style { "{context.theme}" }
-        style { "{context.css}" }
         div {
-            id: "content",
-            class: "content",
-            onkeydown: keydown,
-            div {
-                id: "navbar",
-                class: "navbar",
-                input {
-                    id: "search",
-                    value: "{search}",
-                    pattern: pattern,
-                    maxlength: maxlength,
-                    oninput: move |e| search.set(e.value()),
-                }
-            }
-            div {
-                id: "results",
-                class: "results",
-                for (pos, index) in results().iter().take(max_result).enumerate() {
-                    gui_entry {
-                        key: "{pos}-{index}",
-                        position,
-                        search_index: pos,
-                        entry_index: *index,
+            id: "context-menu",
+            class: "context-menu",
+            style: ctx_menu.with(|m| m.style()),
+            ul {
+                class: "menu",
+                for (idx, name, ctx) in entry.actions
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, action)| {
+                        let name = match idx == 0 {
+                            true => format!("Launch {:?}", entry.name),
+                            false => action.name.to_owned(),
+                        };
+                        (idx, name, use_context::<Ctx>())
+                    }) {
+                    li {
+                        class: "menu-action",
+                        a {
+                            href: "#",
+                            onclick: move |_| {
+                                position.with_mut(|p| p.subpos = idx);
+                                let pos = position.clone();
+                                ctx.borrow().execute(index, &pos);
+                            },
+                            "{name}"
+                        }
                     }
                 }
             }

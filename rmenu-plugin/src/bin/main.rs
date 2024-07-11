@@ -138,6 +138,9 @@ struct OptionArgs {
     /// Override Single-Click Activation Option
     #[arg(long)]
     pub single_click: Option<bool>,
+    /// Override Right-Click Context-Menu Activation Option
+    #[arg(long)]
+    pub context_menu: Option<bool>,
     // search settings
     /// Override Default Placeholder
     #[arg(short = 'P', long)]
@@ -204,6 +207,7 @@ impl Into<Options> for OptionArgs {
             placeholder: self.placeholder,
             hover_select: self.hover_select,
             single_click: self.single_click,
+            context_menu: self.context_menu,
             search_restrict: self.search_restrict,
             search_max_length: self.search_max_length,
             key_exec: self.key_exec,

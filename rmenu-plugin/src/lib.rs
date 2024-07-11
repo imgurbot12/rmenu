@@ -98,6 +98,8 @@ pub struct Options {
     pub hover_select: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub single_click: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context_menu: Option<bool>,
     // search settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placeholder: Option<String>,

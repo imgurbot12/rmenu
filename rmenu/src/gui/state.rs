@@ -1,3 +1,4 @@
+use dioxus::html::geometry::euclid::Point2D;
 use dioxus::prelude::*;
 use rmenu_plugin::Entry;
 
@@ -49,8 +50,37 @@ impl ContextBuilder {
     }
 }
 
+/// Custom ContextMenu Tracker
+#[derive(Debug, Default)]
+pub struct ContextMenu {
+    pub entry: Option<usize>,
+    pub x: f64,
+    pub y: f64,
+}
+
+impl ContextMenu {
+    #[inline]
+    pub fn is_active(&self) -> bool {
+        self.entry.is_some()
+    }
+    pub fn style(&self) -> String {
+        if self.entry.is_none() {
+            return "display: hidden".to_owned();
+        }
+        return format!("display: block; left: {}px; top: {}px", self.x, self.y);
+    }
+    pub fn set<T>(&mut self, index: usize, coords: Point2D<f64, T>) {
+        self.entry = Some(index);
+        self.x = coords.x;
+        self.y = coords.y;
+    }
+    pub fn reset(&mut self) {
+        self.entry = None;
+    }
+}
+
 /// Global Position Tracker
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Position {
     pub pos: usize,
     pub subpos: usize,

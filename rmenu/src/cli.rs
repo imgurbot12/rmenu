@@ -85,6 +85,9 @@ pub struct Args {
     /// Activate Menu Result with Single Click
     #[arg(long)]
     single_click: Option<bool>,
+    /// Allow Right Click Context Menu
+    #[arg(long)]
+    context_menu: Option<bool>,
 
     // search settings
     /// Enforce Regex Pattern on Search
@@ -226,6 +229,7 @@ impl Args {
         config.use_comments = self.use_icons.unwrap_or(config.use_comments);
         config.hover_select = self.hover_select.unwrap_or(config.hover_select);
         config.single_click = self.single_click.unwrap_or(config.single_click);
+        config.context_menu = self.context_menu.unwrap_or(config.context_menu);
         // override search settings
         cfg_replace!(config.search.restrict, self.search_restrict);
         cfg_replace!(config.search.max_length, self.search_max_length, true);

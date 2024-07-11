@@ -28,6 +28,7 @@ pub struct Config {
     pub use_comments: bool,
     pub hover_select: bool,
     pub single_click: bool,
+    pub context_menu: bool,
     pub search: SearchConfig,
     pub window: WindowConfig,
     pub keybinds: KeyConfig,
@@ -46,6 +47,7 @@ impl Default for Config {
             use_comments: true,
             hover_select: false,
             single_click: false,
+            context_menu: false,
             search: Default::default(),
             window: Default::default(),
             keybinds: Default::default(),
@@ -63,6 +65,7 @@ impl Config {
         cfg_replace!(self.jump_dist, options.jump_dist, true);
         cfg_replace!(self.hover_select, options.hover_select, true);
         cfg_replace!(self.single_click, options.single_click, true);
+        cfg_replace!(self.context_menu, options.context_menu, true);
         // search settings
         cfg_replace!(self.search.placeholder, options.placeholder);
         cfg_replace!(self.search.restrict, options.search_restrict);
