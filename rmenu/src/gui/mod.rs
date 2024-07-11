@@ -59,6 +59,7 @@ fn gui_main() -> Element {
     });
 
     // declare keyboard handler
+    #[cfg(debug_assertions)]
     let window = dioxus_desktop::use_window();
     let key_ctx = use_context::<Ctx>();
     let keydown = move |e: KeyboardEvent| {
