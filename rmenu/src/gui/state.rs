@@ -173,9 +173,10 @@ impl Context {
         self.scroll(pos.with(|p| p.pos) + 3);
     }
 
-    pub fn execute(&mut self, index: usize, pos: &Pos) {
+    //NOTE: using with_mut to trigger rendering update
+    pub fn execute(&mut self, index: usize, pos: &mut Pos) {
         let entry = self.get_entry(index);
-        let (pos, subpos) = pos.with(|p| (p.pos, p.subpos));
+        let (pos, subpos) = pos.with_mut(|p| (p.pos, p.subpos));
         log::debug!("execute-pos {pos} {subpos}");
         let Some(action) = entry.actions.get(subpos) else {
             return;

@@ -215,14 +215,14 @@ fn gui_entry(mut row: Row) -> Element {
                 onclick: move |_| {
                     row.position.with_mut(|p| p.set(row.search_index, 0));
                     if single_click && !menu_active {
-                        let pos = row.position.clone();
-                        result_ctx1.borrow_mut().execute(row.entry_index, &pos);
+                        let mut pos = row.position.clone();
+                        result_ctx1.borrow_mut().execute(row.entry_index, &mut pos);
                     }
                 },
                 ondoubleclick: move |_| {
                     if !menu_active {
-                        let pos = row.position.clone();
-                        result_ctx2.borrow_mut().execute(row.entry_index, &pos);
+                        let mut pos = row.position.clone();
+                        result_ctx2.borrow_mut().execute(row.entry_index, &mut pos);
                     }
                 },
                 // content
@@ -280,13 +280,13 @@ fn gui_entry(mut row: Row) -> Element {
                         onclick: move |_| {
                             row.position.with_mut(|p| p.set(row.search_index, 0));
                             if single_click {
-                                let pos = row.position.clone();
-                                ctx.borrow_mut().execute(row.entry_index, &pos);
+                                let mut pos = row.position.clone();
+                                ctx.borrow_mut().execute(row.entry_index, &mut pos);
                             }
                         },
                         ondoubleclick: move |_| {
-                            let pos = row.position.clone();
-                            ctx2.borrow_mut().execute(row.entry_index, &pos);
+                            let mut pos = row.position.clone();
+                            ctx2.borrow_mut().execute(row.entry_index, &mut pos);
                         },
                         // content
                         div {
@@ -333,8 +333,8 @@ fn context_menu(ctx_menu: Signal<ContextMenu>, position: Signal<Position>) -> El
                             href: "#",
                             onclick: move |_| {
                                 position.with_mut(|p| p.subpos = idx);
-                                let pos = position.clone();
-                                ctx.borrow_mut().execute(index, &pos);
+                                let mut pos = position.clone();
+                                ctx.borrow_mut().execute(index, &mut pos);
                             },
                             "{name}"
                         }
