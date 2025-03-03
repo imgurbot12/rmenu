@@ -163,7 +163,7 @@ impl Context {
 
     fn scroll(&self, pos: usize) {
         let js = format!("document.getElementById('result-{pos}').scrollIntoView(false)");
-        eval(&js);
+        document::eval(&js);
     }
     fn scroll_up(&self, pos: &Pos) {
         let pos = pos.with(|p| p.pos);

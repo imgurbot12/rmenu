@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::sync::{Arc, RwLock};
 
 use dioxus::prelude::*;
 
@@ -11,7 +11,7 @@ use state::{Context, ContextMenu, Position};
 
 const DEFAULT_CSS_CONTENT: &'static str = include_str!("../../public/default.css");
 
-type Ctx = Rc<RefCell<Context>>;
+type Ctx = Arc<RwLock<Context>>;
 
 pub fn run(ctx: Context) {
     let window = dioxus_desktop::WindowBuilder::default()
@@ -27,35 +27,43 @@ pub fn run(ctx: Context) {
         .with_window(window)
         .with_menu(None)
         .with_disable_context_menu(true);
+
+    let context = Arc::new(RwLock::new(ctx));
     LaunchBuilder::desktop()
         .with_cfg(config)
-        .with_context(Rc::new(RefCell::new(ctx)))
+        .with_context(context)
         .launch(gui_main);
 }
 
 fn gui_main() -> Element {
     // build context and signals for state
     let ctx = use_context::<Ctx>();
+
     let mut search = use_signal(String::new);
     let mut position = use_signal(Position::default);
-    let mut results = use_signal(|| ctx.borrow().all_results());
+    let mut results = use_signal(|| ctx.read().expect("failed to read ctx").all_results());
     let mut ctx_menu = use_signal(ContextMenu::default);
 
     // refocus on input
     let js = format!("setTimeout(() => {{ document.getElementById('search').focus() }}, 100)");
-    eval(&js);
+    document::eval(&js);
 
     // configure exit cleanup function
     use_drop(move || {
         let ctx = consume_context::<Ctx>();
-        ctx.borrow_mut().cleanup();
+        ctx.write().expect("failed to write ctx").cleanup();
     });
 
     // update search results on search
     let effect_ctx = use_context::<Ctx>();
     use_effect(move || {
         let search = search();
-        results.set(effect_ctx.borrow_mut().set_search(&search, &mut position));
+        results.set(
+            effect_ctx
+                .write()
+                .expect("failed to write ctx")
+                .set_search(&search, &mut position),
+        );
     });
 
     // declare keyboard handler
@@ -63,7 +71,7 @@ fn gui_main() -> Element {
     let window = dioxus_desktop::use_window();
     let key_ctx = use_context::<Ctx>();
     let keydown = move |e: KeyboardEvent| {
-        let mut context = key_ctx.borrow_mut();
+        let mut context = key_ctx.write().expect("failed to write ctx");
         // suport console key
         #[cfg(debug_assertions)]
         if e.code() == Code::Backquote {
@@ -79,7 +87,7 @@ fn gui_main() -> Element {
 
     // handle quit event
     let window = dioxus_desktop::use_window();
-    let context = ctx.borrow();
+    let context = ctx.read().expect("failed to read ctx");
     if context.quit {
         window.set_visible(false);
         spawn(async move {
@@ -109,7 +117,6 @@ fn gui_main() -> Element {
                 ctx_menu.with_mut(|m| m.reset());
             },
             onkeydown: keydown,
-            prevent_default: "contextmenu",
             div {
                 id: "navbar",
                 class: "navbar",
@@ -173,7 +180,7 @@ fn render_image(image: Option<&String>, alt: Option<&String>) -> Element {
 fn gui_entry(mut row: Row) -> Element {
     // retrieve entry information based on index
     let ctx = use_context::<Ctx>();
-    let context = ctx.borrow();
+    let context = ctx.read().expect("failed to read ctx");
     let entry = context.get_entry(row.entry_index);
     let hover_select = context.config.hover_select;
     let (pos, subpos) = row.position.with(|p| (p.pos, p.subpos));
@@ -216,13 +223,13 @@ fn gui_entry(mut row: Row) -> Element {
                     row.position.with_mut(|p| p.set(row.search_index, 0));
                     if single_click && !menu_active {
                         let mut pos = row.position.clone();
-                        result_ctx1.borrow_mut().execute(row.entry_index, &mut pos);
+                        result_ctx1.write().expect("failed to write ctx").execute(row.entry_index, &mut pos);
                     }
                 },
                 ondoubleclick: move |_| {
                     if !menu_active {
                         let mut pos = row.position.clone();
-                        result_ctx2.borrow_mut().execute(row.entry_index, &mut pos);
+                        result_ctx2.write().expect("failed to write ctx").execute(row.entry_index, &mut pos);
                     }
                 },
                 // content
@@ -230,10 +237,10 @@ fn gui_entry(mut row: Row) -> Element {
                     {rsx! {
                         div {
                             class: "icon",
-                            {render_image(entry.icon.as_ref(), entry.icon_alt.as_ref())},
+                            {render_image(entry.icon.as_ref(), entry.icon_alt.as_ref())}
                         }
                     }}
-                },
+                }
                 if context.config.use_comments {
                     {rsx! {
                         div {
@@ -281,12 +288,12 @@ fn gui_entry(mut row: Row) -> Element {
                             row.position.with_mut(|p| p.set(row.search_index, 0));
                             if single_click {
                                 let mut pos = row.position.clone();
-                                ctx.borrow_mut().execute(row.entry_index, &mut pos);
+                                ctx.write().expect("failed to write ctx").execute(row.entry_index, &mut pos);
                             }
                         },
                         ondoubleclick: move |_| {
                             let mut pos = row.position.clone();
-                            ctx2.borrow_mut().execute(row.entry_index, &mut pos);
+                            ctx2.write().expect("failed to write ctx").execute(row.entry_index, &mut pos);
                         },
                         // content
                         div {
@@ -307,7 +314,7 @@ fn gui_entry(mut row: Row) -> Element {
 #[component]
 fn context_menu(ctx_menu: Signal<ContextMenu>, position: Signal<Position>) -> Element {
     let ctx = use_context::<Ctx>();
-    let context = ctx.borrow();
+    let context = ctx.read().expect("failed to read ctx");
     let index = ctx_menu.with(|c| c.entry.unwrap_or(0));
     let entry = context.get_entry(index);
     rsx! {
@@ -334,7 +341,7 @@ fn context_menu(ctx_menu: Signal<ContextMenu>, position: Signal<Position>) -> El
                             onclick: move |_| {
                                 position.with_mut(|p| p.subpos = idx);
                                 let mut pos = position.clone();
-                                ctx.borrow_mut().execute(index, &mut pos);
+                                ctx.write().expect("failed to write ctx").execute(index, &mut pos);
                             },
                             "{name}"
                         }

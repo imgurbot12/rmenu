@@ -16,7 +16,7 @@ static DEFAULT_CSS_CONTENT: &'static str = include_str!("../public/default.css")
 
 /// Run GUI Application
 pub fn run(ssid: String, timeout: u32) {
-    let window = dioxus_desktop::WindowBuilder::new()
+    let window = dioxus_desktop::WindowBuilder::default()
         .with_title("RMenu - Network Login")
         .with_inner_size(LogicalSize {
             width: 400,
@@ -94,7 +94,7 @@ fn gui_main() -> Element {
 
     // refocus on input
     let js = format!("setTimeout(() => {{ document.getElementById('secret').focus() }}, 100)");
-    eval(&js);
+    document::eval(&js);
 
     // build keyboard actions event handler
     let keyboard_controls = move |e: KeyboardEvent| match e.code() {

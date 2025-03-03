@@ -37,9 +37,9 @@ fn make_temp() -> Result<(), io::Error> {
 fn svg_to_png(path: &str, dest: &PathBuf, pixels: u32) -> Result<(), SvgError> {
     // read and convert to resvg document tree
     let xml = std::fs::read(path)?;
-    let opt = resvg::usvg::Options::default();
-    let fontdb = resvg::usvg::fontdb::Database::default();
-    let tree = resvg::usvg::Tree::from_data(&xml, &opt, &fontdb)?;
+    let mut opt = resvg::usvg::Options::default();
+    opt.fontdb_mut().load_system_fonts();
+    let tree = resvg::usvg::Tree::from_data(&xml, &opt)?;
     // generate pixel-buffer and scale according to size preference
     let size = tree.size().to_int_size();
     let scale = pixels as f32 / size.width() as f32;

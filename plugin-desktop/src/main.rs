@@ -50,7 +50,7 @@ fn fix_exec(exec: &str) -> String {
 
 /// Parse XDG Desktop Entry into RMenu Entry
 fn parse_desktop(path: PathBuf, locales: &[&str]) -> Option<Entry> {
-    let entry = DesktopEntry::from_path(path, locales).ok()?;
+    let entry = DesktopEntry::from_path(path, Some(locales)).ok()?;
     // hide `NoDisplay` entries
     if entry.no_display() {
         return None;
@@ -136,7 +136,7 @@ fn main() {
 
     // collect applications
     let app_paths = data_dirs("applications");
-    let mut desktops: Vec<Entry> = Iter::new(app_paths)
+    let mut desktops: Vec<Entry> = Iter::new(app_paths.into_iter())
         .into_iter()
         .unique_by(|f| match cli.non_unique {
             true => f.to_str().map(|s| s.to_owned()),

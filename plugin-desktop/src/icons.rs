@@ -53,11 +53,12 @@ fn theme_inis(cfgdir: &PathBuf) -> Vec<String> {
 /// Parse FreeDesktop Theme-Name from Index File
 fn get_theme_name(path: &PathBuf, locales: &[&str]) -> Option<String> {
     let content = read_to_string(path).ok()?;
-    let config = DesktopEntry::from_str(&path, &content, locales).ok()?;
+    let config = DesktopEntry::from_str(&path, &content, Some(locales)).ok()?;
     config
         .groups
+        .0
         .get(INDEX_MAIN)
-        .and_then(|g| g.get(INDEX_NAME))
+        .and_then(|g| g.0.get(INDEX_NAME))
         .map(|key| key.0.to_string())
 }
 
@@ -141,18 +142,16 @@ fn sort_dirs(dirs: &mut Vec<PathPriority>) -> Vec<PathBuf> {
 fn parse_index(spec: &ThemeSpec, locales: &[&str]) -> Result<ThemeInfo, ThemeError> {
     // parse file content
     let index = spec.root.join(INDEX_FILE);
-    let config = DesktopEntry::from_path(index, locales)
+    let config = DesktopEntry::from_path(index, Some(locales))
         .map_err(|e| ThemeError::IndexError(e.to_string()))?;
     let main = config
         .groups
-        .get(INDEX_MAIN)
+        .group(INDEX_MAIN)
         .ok_or_else(|| ThemeError::NoSuchGroup(INDEX_MAIN))?;
     // retrieve name and directories
     let name = main
-        .get(INDEX_NAME)
-        .ok_or_else(|| ThemeError::NoSuchKey(INDEX_NAME))?
-        .0
-        .to_string();
+        .localized_entry(INDEX_NAME, locales)
+        .ok_or_else(|| ThemeError::NoSuchKey(INDEX_NAME))?;
     // check if name in supported themes
     let index = spec
         .themes
@@ -161,14 +160,14 @@ fn parse_index(spec: &ThemeSpec, locales: &[&str]) -> Result<ThemeInfo, ThemeErr
         .ok_or_else(|| ThemeError::UnselectedTheme)?;
     // sort directories based on size preference
     let mut directories = main
-        .get(INDEX_DIRS)
+        .localized_entry(INDEX_DIRS, locales)
         .ok_or_else(|| ThemeError::NoSuchKey(INDEX_DIRS))?
-        .0
         .split(',')
         .into_iter()
         .filter_map(|dir| {
-            let group = config.groups.get(dir)?;
+            let group = config.groups.0.get(dir)?;
             let size = group
+                .0
                 .get(INDEX_SIZE)
                 .and_then(|e| Some(e.0.to_owned()))
                 .and_then(|s| spec.sizes.iter().position(|is| &s == is));
@@ -180,7 +179,7 @@ fn parse_index(spec: &ThemeSpec, locales: &[&str]) -> Result<ThemeInfo, ThemeErr
         .collect();
     Ok(ThemeInfo {
         priority: index,
-        name,
+        name: name.to_owned(),
         paths: sort_dirs(&mut directories),
     })
 }
