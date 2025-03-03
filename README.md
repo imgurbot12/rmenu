@@ -65,8 +65,8 @@ RMenu Comes with a few default plugins.
 |   drun    | Run a Configured Free-Desktop Application               |
 |   audio   | Select and Set-Default PulseAudio Sink using `pactl`    |
 |  network  | Wi-Fi Login/Connection Tool using Network-Manager       |
-|  window   | Simple Window Switcher (Currently Only Support Sway)    |
-| powermenu | Simple Power/Logout Tool (Currently Only Supports Sway) |
+|  window   | Simple Window Switcher (Supports Sway/Hyprland)         |
+| powermenu | Simple Power/Logout Tool (Supports Sway/Hyprland)       |
 
 Run a plugin by passing the `-r` flag like one of the following:
 

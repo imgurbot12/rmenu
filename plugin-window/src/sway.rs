@@ -44,13 +44,17 @@ pub fn get_windows() -> Result<Vec<SwayWindow>> {
             return Err(anyhow!("Unexpected Node Value: {:?}", item));
         }
         // pass additional nodes if not a valid window object
-        let Some(ntype) = item.get(SWAY_TYPE_KEY) else { continue };
+        let Some(ntype) = item.get(SWAY_TYPE_KEY) else {
+            continue;
+        };
         let is_nulled = item
             .get(SWAY_WINDOW_NAME)
             .map(|v| v.is_null())
             .unwrap_or(false);
         if ntype != SWAY_WINDOW_TYPE || is_nulled {
-            let Some(snodes) = item.get(SWAY_NODES_KEY) else { continue };
+            let Some(snodes) = item.get(SWAY_NODES_KEY) else {
+                continue;
+            };
             match snodes {
                 Value::Array(array) => nodes.extend(array.clone().into_iter()),
                 _ => return Err(anyhow!("Unexpected NodeList Value: {:?}", snodes)),
@@ -69,11 +73,11 @@ impl WindowManager for SwayManager {
     /// Focus on Specified Window
     fn focus(&self, id: &str) -> Result<()> {
         let out = Command::new("swaymsg")
-            .arg(format!("[pid={}] focus", id))
+            .arg(format!("[pid={id}] focus"))
             .output()
-            .context("Failed SwayMsg To Focus Window: {id:?}")?;
+            .context(format!("Failed Swaymsg To focus window: {id:?}"))?;
         if !out.status.success() {
-            return Err(anyhow!("SwayMsg Exited with Error: {:?}", out.status));
+            return Err(anyhow!("Swaymsg exited with error: {:?}", out.status));
         }
         Ok(())
     }

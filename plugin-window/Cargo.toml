@@ -6,8 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = ["sway"]
+default = ["sway", "hyprland"]
 sway = []
+hyprland = []
 
 [dependencies]
 anyhow = "1.0.86"

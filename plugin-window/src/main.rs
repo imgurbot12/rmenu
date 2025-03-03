@@ -7,6 +7,9 @@ use rmenu_plugin::Entry;
 #[cfg(feature = "sway")]
 mod sway;
 
+#[cfg(feature = "hyprland")]
+mod hyprland;
+
 /// Trait To Implement for Window Focus
 pub trait WindowManager: Debug {
     fn focus(&self, id: &str) -> Result<()>;
@@ -29,11 +32,14 @@ pub struct Cli {
 
 /// Retrieve WindowManager Implementation
 #[allow(unreachable_code)]
-fn get_impl() -> impl WindowManager {
-    #[cfg(feature = "sway")]
-    return sway::SwayManager {};
-    // if no features are enabled for some reason?
-    panic!("No Implementations Available")
+fn get_impl() -> Box<dyn WindowManager> {
+    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+    if cfg!(feature = "sway") && desktop == "sway" {
+        return Box::new(sway::SwayManager {});
+    } else if cfg!(feature = "hyprland") && desktop == "Hyprland" {
+        return Box::new(hyprland::HyprlandManager {});
+    }
+    panic!("Desktop environment {desktop:?} not supported.");
 }
 
 fn main() -> Result<()> {
