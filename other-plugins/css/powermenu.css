@@ -28,6 +28,7 @@ body {
 .icon {
   width: 100%;
   font-size: 6rem;
+  aspect-ratio: auto;
 }
 
 .entry {

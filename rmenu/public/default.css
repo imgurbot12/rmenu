@@ -72,6 +72,12 @@ input {
   overflow: hidden;
   display: flex;
   justify-content: center;
+  aspect-ratio : 1 / 1
+}
+
+.icon_alt {
+  text-align: center;
+  align-content: center;
 }
 
 img {

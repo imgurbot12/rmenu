@@ -38,6 +38,19 @@ plugins:
       key_move_next: ["Arrow-Right"]
       key_jump_prev: ["Arrow-Up"]
       key_jump_next: ["Arrow-Down"]
+  emoji:
+    exec:  ["~/.config/rmenu/plugins/rmenu-emoji"]
+    cache: false
+    placeholder: "Search an Emoji"
+    options:
+      css: ~/.config/rmenu/plugins/css/emojis.css
+      hover_select: true
+      single_click: true
+      context_menu: true
+      key_move_prev: ["Arrow-Left"]
+      key_move_next: ["Arrow-Right"]
+      key_jump_prev: ["Arrow-Up"]
+      key_jump_next: ["Arrow-Down"]
   network:
     exec:  ["~/.config/rmenu/plugins/rmenu-network"]
     cache: false

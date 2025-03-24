@@ -1,0 +1,30 @@
+
+.results {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.result-entry {
+  display: flex;
+  flex-basis: 20%;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent !important;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  font-size: 30px;
+  width: 10rem;
+  padding: 0.5rem;
+
+  border-radius:  16px;
+  border-color: transparent;
+}
+
+.comment {
+  display: none;
+}

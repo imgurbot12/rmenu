@@ -5,6 +5,7 @@ members = [
   "rmenu-plugin",
   "plugin-run",
   "plugin-desktop",
+  "plugin-emoji",
   "plugin-network",
   "plugin-window",
 ]

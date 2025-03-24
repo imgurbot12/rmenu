@@ -67,6 +67,7 @@ RMenu Comes with a few default plugins.
 |  network  | Wi-Fi Login/Connection Tool using Network-Manager       |
 |  window   | Simple Window Switcher (Supports Sway/Hyprland)         |
 | powermenu | Simple Power/Logout Tool (Supports Sway/Hyprland)       |
+|   emoji   | Emoji Picker                                            |
 
 Run a plugin by passing the `-r` flag like one of the following:
 

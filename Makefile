@@ -34,9 +34,11 @@ deploy:
 	mkdir -p ${DEST}/plugins ${INSTALL}
 	cp -vfr themes ${DEST}/.
 	cp -vfr other-plugins/* ${DEST}/plugins/.
+	cp -vfr plugin-emoji/css/* ${DEST}/plugins/css/.
 	cp -vf ./target/release/rmenu ${INSTALL}/rmenu
 	cp -vf ./target/release/rmenu-build ${INSTALL}/rmenu-build
 	cp -vf ./target/release/desktop ${DEST}/plugins/rmenu-desktop
+	cp -vf ./target/release/emoji   ${DEST}/plugins/rmenu-emoji
 	cp -vf ./target/release/run ${DEST}/plugins/rmenu-run
 	cp -vf ./target/release/network ${DEST}/plugins/rmenu-network
 	cp -vf ./target/release/window ${DEST}/plugins/rmenu-window
@@ -55,5 +57,6 @@ build-rmenu:
 build-plugins:
 	${CARGO} build -p run ${FLAGS}
 	${CARGO} build -p desktop ${FLAGS}
+	${CARGO} build -p emoji ${FLAGS}
 	${CARGO} build -p network ${FLAGS}
 	${CARGO} build -p window ${FLAGS}
