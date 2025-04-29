@@ -1,0 +1,53 @@
+* {
+  font-family: monospace;
+  color:       orange;
+}
+
+html {
+  background-color: #292c35;
+}
+
+#search {
+  border: none;
+  background-color: #292c35;
+  margin-bottom: 5px;
+  padding-bottom: 0px;
+}
+
+#body {
+  position: absolute;
+  top: 0;
+
+  display: flex;
+
+  width: 100vw;
+}
+
+#body::before {
+  content: url(~/Pictures/applet.png);
+}
+
+#content {
+  width: -webkit-fill-available;
+}
+
+#navbar {
+  margin: 4px 6px;
+  position: relative;
+}
+
+#results {
+  width: -webkit-fill-available;
+}
+
+.result {
+  margin: 4px 6px;
+}
+
+.selected {
+  background-color: #181818;
+}
+
+.context-menu {
+  visibility: hidden;
+}

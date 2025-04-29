@@ -141,6 +141,13 @@ struct OptionArgs {
     /// Override Right-Click Context-Menu Activation Option
     #[arg(long)]
     pub context_menu: Option<bool>,
+    /// Override Use-Icons Setting
+    #[arg(long)]
+    pub use_icons: Option<bool>,
+    /// Override Use-Comments Setting
+    #[arg(long)]
+    pub use_comments: Option<bool>,
+
     // search settings
     /// Override Default Placeholder
     #[arg(short = 'P', long)]
@@ -176,6 +183,13 @@ struct OptionArgs {
     /// Override Jump-Previous Keybinds
     #[arg(short = 'J', long)]
     pub key_jump_prev: Option<Vec<String>>,
+    /// Override Mode-Next Keybinds
+    #[arg(short = 'N', long)]
+    pub key_mode_next: Option<Vec<String>>,
+    /// Override Mode-Previous Keybinds
+    #[arg(long)]
+    pub key_mode_prev: Option<Vec<String>>,
+
     // window settings
     /// Override Window Title
     #[arg(long)]
@@ -208,6 +222,9 @@ impl Into<Options> for OptionArgs {
             hover_select: self.hover_select,
             single_click: self.single_click,
             context_menu: self.context_menu,
+            use_icons: self.use_icons,
+            use_comments: self.use_comments,
+
             search_restrict: self.search_restrict,
             search_max_length: self.search_max_length,
             key_exec: self.key_exec,
@@ -218,6 +235,9 @@ impl Into<Options> for OptionArgs {
             key_close_menu: self.key_close_menu,
             key_jump_next: self.key_jump_next,
             key_jump_prev: self.key_jump_prev,
+            key_mode_next: self.key_mode_next,
+            key_mode_prev: self.key_mode_prev,
+
             title: self.title,
             decorate: self.deocorate,
             fullscreen: self.fullscreen,

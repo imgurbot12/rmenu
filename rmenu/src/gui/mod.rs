@@ -111,33 +111,37 @@ fn gui_main() -> Element {
         style { "{context.css}" }
         // menu content
         div {
-            id: "content",
-            class: "content",
-            onclick: move |_| {
-                ctx_menu.with_mut(|m| m.reset());
-            },
-            onkeydown: keydown,
+            id: "body",
+            class: "body",
             div {
-                id: "navbar",
-                class: "navbar",
-                input {
-                    id: "search",
-                    value: "{search}",
-                    pattern: pattern,
-                    maxlength: maxlength,
-                    oninput: move |e| search.set(e.value()),
+                id: "content",
+                class: "content",
+                onclick: move |_| {
+                    ctx_menu.with_mut(|m| m.reset());
+                },
+                onkeydown: keydown,
+                div {
+                    id: "navbar",
+                    class: "navbar",
+                    input {
+                        id: "search",
+                        value: "{search}",
+                        pattern: pattern,
+                        maxlength: maxlength,
+                        oninput: move |e| search.set(e.value()),
+                    }
                 }
-            }
-            div {
-                id: "results",
-                class: "results",
-                for (pos, index) in results().iter().take(max_result).enumerate() {
-                    gui_entry {
-                        key: "{pos}-{index}",
-                        ctx_menu,
-                        position,
-                        search_index: pos,
-                        entry_index: *index,
+                div {
+                    id: "results",
+                    class: "results",
+                    for (pos, index) in results().iter().take(max_result).enumerate() {
+                        gui_entry {
+                            key: "{pos}-{index}",
+                            ctx_menu,
+                            position,
+                            search_index: pos,
+                            entry_index: *index,
+                        }
                     }
                 }
             }

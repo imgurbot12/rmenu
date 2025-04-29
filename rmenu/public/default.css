@@ -68,7 +68,7 @@ input {
 }
 
 .icon {
-  width: 4%;
+  height: 8vh;
   overflow: hidden;
   display: flex;
   justify-content: center;

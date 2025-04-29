@@ -254,7 +254,7 @@ impl Context {
         let threshold = self.config.page_load;
         // increment total results by 1 page if beyond threshold
         let md = if ratio < threshold { 1 } else { 2 };
-        let limit = std::cmp::min((page + md) * page_size, self.entries.len() - 1);
+        let limit = std::cmp::min((page + md) * page_size, self.entries.len());
         log::debug!("pos: {pos}, page: {page}, ratio: {ratio}, limit: {limit}");
         limit
     }

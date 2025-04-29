@@ -66,6 +66,8 @@ impl Config {
         cfg_replace!(self.hover_select, options.hover_select, true);
         cfg_replace!(self.single_click, options.single_click, true);
         cfg_replace!(self.context_menu, options.context_menu, true);
+        cfg_replace!(self.use_icons, options.use_icons, true);
+        cfg_replace!(self.use_comments, options.use_comments, true);
         // search settings
         cfg_replace!(self.search.placeholder, options.placeholder);
         cfg_replace!(self.search.restrict, options.search_restrict);
@@ -79,6 +81,8 @@ impl Config {
         cfg_keybind!(self.keybinds.close_menu, options.key_close_menu);
         cfg_keybind!(self.keybinds.jump_next, options.key_jump_next);
         cfg_keybind!(self.keybinds.jump_prev, options.key_jump_prev);
+        cfg_keybind!(self.keybinds.mode_next, options.key_mode_next);
+        cfg_keybind!(self.keybinds.mode_prev, options.key_mode_prev);
         // window settings
         cfg_replace!(self.window.title, options.title, true);
         cfg_replace!(self.window.decorate, options.decorate, true);

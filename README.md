@@ -142,6 +142,10 @@ $ rmenu-build --help
 
 ![launchpad](./screenshots/launchpad.png)
 
+#### Applet
+
+![applet](./screenshots/applet.png)
+
 #### Nord
 
 ![nord](./screenshots/nord.png)

@@ -100,6 +100,11 @@ pub struct Options {
     pub single_click: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub context_menu: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub use_icons: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub use_comments: Option<bool>,
+
     // search settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub placeholder: Option<String>,
@@ -124,6 +129,10 @@ pub struct Options {
     pub key_jump_next: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub key_jump_prev: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_mode_next: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub key_mode_prev: Option<Vec<String>>,
     // window settings
     #[serde(skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,

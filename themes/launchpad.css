@@ -59,12 +59,13 @@ input::placeholder {
   font-size: 30px;
   width: 10rem;
   padding: 0.5rem;
- 
+
   border-radius:  16px;
   border-color: transparent;
 }
 
 .icon {
+  height: auto;
   width: 100%;
   font-size: 6rem;
 }

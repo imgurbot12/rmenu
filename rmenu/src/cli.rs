@@ -237,7 +237,7 @@ impl Args {
         config.page_size = self.page_size.unwrap_or(config.page_size);
         config.page_load = self.page_load.unwrap_or(config.page_load);
         config.use_icons = self.use_icons.unwrap_or(config.use_icons);
-        config.use_comments = self.use_icons.unwrap_or(config.use_comments);
+        config.use_comments = self.use_comments.unwrap_or(config.use_comments);
         config.hover_select = self.hover_select.unwrap_or(config.hover_select);
         config.single_click = self.single_click.unwrap_or(config.single_click);
         config.context_menu = self.context_menu.unwrap_or(config.context_menu);
@@ -272,32 +272,38 @@ impl Args {
 
     /// Load CSS Theme or Default
     pub fn get_theme(&self) -> String {
+        let home = shellexpand::tilde("~/").to_string();
         self.find_xdg_file(DEFAULT_THEME, &self.theme)
             .map(read_to_string)
             .map(|f| {
-                f.unwrap_or_else(|err| {
-                    log::error!("Failed to load CSS: {err:?}");
+                let css = f.unwrap_or_else(|err| {
+                    log::error!("Failed to load Theme: {err:?}");
                     String::new()
-                })
+                });
+                css.replace("~/", &home)
             })
             .unwrap_or_else(String::new)
     }
 
     /// Load Additional CSS or Default
     pub fn get_css(&self, c: &Config) -> String {
-        let css = self
-            .css
+        let home = shellexpand::tilde("~/").to_string();
+        self.css
             .clone()
             .map(|s| s.to_string_lossy().to_string())
-            .or(c.css.clone());
-        if let Some(path) = css {
-            let path = shellexpand::tilde(&path).to_string();
-            match read_to_string(&path) {
-                Ok(css) => return css,
-                Err(err) => log::error!("Failed to load Theme: {err:?}"),
-            }
-        }
-        String::new()
+            .or(c.css.clone())
+            .map(|f| {
+                let path = shellexpand::tilde(&f).to_string();
+                read_to_string(&path)
+            })
+            .map(|f| {
+                let css = f.unwrap_or_else(|err| {
+                    log::error!("Failed to load CSS: {err:?}");
+                    String::new()
+                });
+                css.replace("~/", &home)
+            })
+            .unwrap_or_else(String::new)
     }
 
     fn read_entries<T: Read>(
