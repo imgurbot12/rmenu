@@ -15,6 +15,7 @@ static INDEX_NAME: &'static str = "Name";
 static INDEX_SIZE: &'static str = "Size";
 static INDEX_DIRS: &'static str = "Directories";
 static INDEX_FILE: &'static str = "index.theme";
+static INDEX_INHERITS: &'static str = "Inherits";
 
 static DEFAULT_INDEX: &'static str = "default/index.theme";
 static DEFAULT_THEME: &'static str = "Hicolor";
@@ -54,12 +55,21 @@ fn theme_inis(cfgdir: &PathBuf) -> Vec<String> {
 fn get_theme_name(path: &PathBuf, locales: &[&str]) -> Option<String> {
     let content = read_to_string(path).ok()?;
     let config = DesktopEntry::from_str(&path, &content, Some(locales)).ok()?;
-    config
+    let name = config
         .groups
         .0
         .get(INDEX_MAIN)
         .and_then(|g| g.0.get(INDEX_NAME))
-        .map(|key| key.0.to_string())
+        .map(|key| key.0.to_string());
+    match name {
+        Some(name) if name.to_lowercase() != "default" => Some(name),
+        _ => config
+            .groups
+            .0
+            .get(INDEX_MAIN)
+            .and_then(|g| g.0.get(INDEX_INHERITS))
+            .map(|key| key.0.to_string()),
+    }
 }
 
 /// Determine XDG Icon Theme based on Preexisting Configuration Files
@@ -246,12 +256,12 @@ impl IconSpec {
 }
 
 /// Parse and Collect a list of Directories to Find Icons in Order of Preference
-fn parse_themes(icons: IconSpec, locales: &[&str]) -> Vec<PathBuf> {
+fn parse_themes(icons: &IconSpec, locales: &[&str]) -> Vec<PathBuf> {
     // retrieve supported theme information
     let mut infos: Vec<ThemeInfo> = icons
         .paths
         // retrieve icon directories within main icon data paths
-        .into_iter()
+        .iter()
         .filter_map(|p| Some(read_dir(&p).ok()?.into_iter().filter_map(|d| d.ok())))
         .flatten()
         .map(|readdir| readdir.path())
@@ -286,7 +296,7 @@ fn is_icon(fname: &str) -> bool {
 /// Collect Unique Icon Map based on Preffered Paths
 pub fn collect_icons(spec: IconSpec, locales: &[&str]) -> IconMap {
     let mut map = HashMap::new();
-    for path in parse_themes(spec, locales).into_iter() {
+    for path in parse_themes(&spec, locales).into_iter() {
         let icons = WalkDir::new(path)
             .follow_links(true)
             .into_iter()
@@ -294,6 +304,28 @@ pub fn collect_icons(spec: IconSpec, locales: &[&str]) -> IconMap {
             .filter(|e| e.file_type().is_file());
         for icon in icons {
             let Some(fname) = icon.file_name().to_str() else {
+                continue;
+            };
+            if !is_icon(&fname) {
+                continue;
+            }
+            let Some((name, _)) = fname.rsplit_once(".") else {
+                continue;
+            };
+            map.entry(name.to_owned())
+                .or_insert_with(|| icon.path().to_owned());
+        }
+    }
+    for path in spec.paths.iter() {
+        let Ok(read) = read_dir(path) else {
+            continue;
+        };
+        let icons = read
+            .filter_map(|e| e.ok())
+            .filter(|e| e.file_type().map(|f| f.is_file()).unwrap_or(false));
+        for icon in icons {
+            let fname = icon.file_name();
+            let Some(fname) = fname.to_str() else {
                 continue;
             };
             if !is_icon(&fname) {

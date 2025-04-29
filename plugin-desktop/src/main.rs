@@ -33,13 +33,21 @@ fn config_dir() -> PathBuf {
 fn data_dirs(dir: &str) -> Vec<PathBuf> {
     let home = std::env::var(XDG_HOME_ENV).unwrap_or_else(|_| XDG_HOME_DEFAULT.to_string());
     let dirs = std::env::var(XDG_DATA_ENV).unwrap_or_else(|_| XDG_DATA_DEFAULT.to_string());
-    format!("{home}:{dirs}")
+    let mut data_dirs: Vec<PathBuf> = format!("{home}:{dirs}")
         .split(":")
         .map(|p| shellexpand::tilde(p).to_string())
         .map(PathBuf::from)
         .map(|p| p.join(dir.to_owned()))
         .filter(|p| p.exists())
-        .collect()
+        .collect();
+    if dir == "icons" {
+        let home = shellexpand::tilde("~").to_string();
+        let path = PathBuf::from(home).join(".icons");
+        if path.exists() {
+            data_dirs.insert(0, path)
+        };
+    }
+    data_dirs
 }
 
 /// Modify Exec Statements to Remove %u/%f/etc...
