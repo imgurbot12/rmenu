@@ -7,13 +7,16 @@ use crate::search::new_searchfn;
 
 type Threads = Vec<std::thread::JoinHandle<()>>;
 
+pub type Entries = Vec<(String, Vec<Entry>)>;
+
 /// Builder Object for Constructing Context
 #[derive(Debug, Default)]
 pub struct ContextBuilder {
     css: String,
     theme: String,
     config: Option<Config>,
-    entries: Vec<Entry>,
+    modes: Vec<String>,
+    entries: Entries,
     threads: Threads,
 }
 
@@ -30,7 +33,11 @@ impl ContextBuilder {
         self.config = Some(config);
         self
     }
-    pub fn with_entries(mut self, entries: Vec<Entry>) -> Self {
+    pub fn with_modes(mut self, modes: Vec<String>) -> Self {
+        self.modes = modes;
+        self
+    }
+    pub fn with_entries(mut self, entries: Entries) -> Self {
         self.entries = entries;
         self
     }
@@ -39,15 +46,24 @@ impl ContextBuilder {
         self
     }
     pub fn build(self) -> Context {
-        Context {
+        let cfg = self.config.unwrap_or_default();
+        let mut ctx = Context {
             quit: false,
-            threads: self.threads,
-            num_results: self.entries.len(),
-            entries: self.entries,
-            config: self.config.unwrap_or_default(),
-            theme: self.theme,
             css: self.css,
-        }
+            theme: self.theme,
+            use_icons: cfg.use_icons,
+            use_comments: cfg.use_comments,
+            config: cfg,
+
+            search: String::new(),
+            modes: self.modes,
+            entries: vec![],
+            all_entries: self.entries,
+            num_results: 0,
+            threads: self.threads,
+        };
+        ctx.update_entries();
+        ctx
     }
 }
 
@@ -99,6 +115,7 @@ impl Position {
 
 /// Alias for Signal wrapped Position
 type Pos = Signal<Position>;
+type Results = Signal<Vec<usize>>;
 
 /// Contain and Track Search Results
 pub struct Context {
@@ -106,13 +123,105 @@ pub struct Context {
     pub css: String,
     pub theme: String,
     pub config: Config,
+    pub use_icons: bool,
+    pub use_comments: bool,
     // search results and controls
+    search: String,
+    modes: Vec<String>,
     entries: Vec<Entry>,
+    all_entries: Entries,
     num_results: usize,
     threads: Threads,
 }
 
 impl Context {
+    // ** Mode Management **
+
+    fn update_entries(&mut self) {
+        self.entries = vec![];
+        if self.modes.is_empty() {
+            let mode = self
+                .all_entries
+                .iter()
+                .map(|(k, _)| k)
+                .take(1)
+                .next()
+                .expect("empty entries");
+            log::warn!("no mode specified. defaulting to {mode:?}");
+            self.modes = vec![mode.to_owned()];
+        }
+        for mode in self.modes.iter() {
+            let entries = self
+                .all_entries
+                .iter()
+                .find(|(k, _)| k == mode)
+                .map(|(_, v)| v)
+                .expect("invalid mode");
+            let entries = entries.into_iter().cloned();
+            self.entries.extend(entries);
+        }
+        self.num_results = self.entries.len();
+        self.use_icons = self.config.use_icons
+            && self
+                .entries
+                .iter()
+                .any(|e| e.icon.is_some() || e.icon_alt.is_some());
+        self.use_comments =
+            self.config.use_comments && self.entries.iter().any(|e| e.comment.is_some());
+    }
+
+    fn get_mode_index(&self) -> usize {
+        self.all_entries
+            .iter()
+            .map(|(k, _)| k)
+            .enumerate()
+            .find(|(_, k)| self.modes.last().expect("no active modes") == *k)
+            .map(|(i, _)| i)
+            .expect("invalid mode present")
+    }
+
+    pub fn next_mode(&mut self, pos: &mut Pos, results: &mut Results) {
+        let _ = pos.with_mut(|p| p.reset());
+        let index = self.get_mode_index();
+        let mode = match index == self.all_entries.len() - 1 {
+            true => self.all_entries.first().expect("empty entries").0.clone(),
+            false => self
+                .all_entries
+                .iter()
+                .map(|(k, _)| k)
+                .skip(index + 1)
+                .take(1)
+                .next()
+                .expect("cannot find next mode")
+                .to_owned(),
+        };
+        log::info!("switching to next mode: {mode:?}");
+        self.modes = vec![mode];
+        self.update_entries();
+        results.set(self.set_search(&self.search.clone(), pos));
+    }
+
+    pub fn prev_mode(&mut self, pos: &mut Pos, results: &mut Results) {
+        let _ = pos.with_mut(|p| p.reset());
+        let index = self.get_mode_index();
+        let mode = match index == 0 {
+            true => self.all_entries.last().expect("empty entries").0.clone(),
+            false => self
+                .all_entries
+                .iter()
+                .map(|(k, _)| k)
+                .skip(index - 1)
+                .take(1)
+                .next()
+                .expect("cannot find prev mode")
+                .to_owned(),
+        };
+        log::info!("switching to prev mode: {mode:?}");
+        self.modes = vec![mode];
+        self.update_entries();
+        results.set(self.set_search(&self.search.clone(), pos));
+    }
+
     // ** Search Results Management  **
 
     pub fn all_results(&self) -> Vec<usize> {
@@ -129,6 +238,7 @@ impl Context {
             .filter(|(_, e)| filter(e))
             .map(|(i, _)| i)
             .collect();
+        self.search = search.to_owned();
         self.num_results = results.len();
         results
     }
@@ -144,7 +254,7 @@ impl Context {
         let threshold = self.config.page_load;
         // increment total results by 1 page if beyond threshold
         let md = if ratio < threshold { 1 } else { 2 };
-        let limit = (page + md) * page_size;
+        let limit = std::cmp::min((page + md) * page_size, self.entries.len() - 1);
         log::debug!("pos: {pos}, page: {page}, ratio: {ratio}, limit: {limit}");
         limit
     }
@@ -158,17 +268,19 @@ impl Context {
 
     #[inline]
     fn matches(&self, bind: &Vec<Keybind>, mods: &Modifiers, key: &Code) -> bool {
-        bind.iter().any(|b| mods.contains(b.mods) && &b.key == key)
+        bind.iter().any(|b| &b.mods == mods && &b.key == key)
     }
 
     fn scroll(&self, pos: usize) {
         let js = format!("document.getElementById('result-{pos}').scrollIntoView(false)");
         document::eval(&js);
     }
+
     fn scroll_up(&self, pos: &Pos) {
         let pos = pos.with(|p| p.pos);
         self.scroll(if pos <= 3 { pos } else { pos + 3 });
     }
+
     fn scroll_down(&self, pos: &Pos) {
         self.scroll(pos.with(|p| p.pos) + 3);
     }
@@ -187,7 +299,13 @@ impl Context {
         self.quit = true;
     }
 
-    pub fn handle_keybinds(&mut self, event: KeyboardEvent, index: usize, pos: &mut Pos) {
+    pub fn handle_keybinds(
+        &mut self,
+        event: KeyboardEvent,
+        index: usize,
+        pos: &mut Pos,
+        results: &mut Results,
+    ) {
         let code = event.code();
         let modifiers = event.modifiers();
         let keybinds = &self.config.keybinds;
@@ -212,6 +330,10 @@ impl Context {
         } else if self.matches(&keybinds.jump_prev, &modifiers, &code) {
             self.move_up(self.config.jump_dist, pos);
             self.scroll_up(pos);
+        } else if self.matches(&keybinds.mode_next, &modifiers, &code) {
+            self.next_mode(pos, results);
+        } else if self.matches(&keybinds.mode_prev, &modifiers, &code) {
+            self.prev_mode(pos, results);
         }
     }
 
@@ -223,6 +345,7 @@ impl Context {
             p.pos = std::cmp::max(p.pos, dist) - dist;
         })
     }
+
     pub fn move_down(&self, dist: usize, pos: &mut Pos) {
         let max_pos = std::cmp::max(self.num_results, 1) - 1;
         pos.with_mut(move |p| {
@@ -230,6 +353,7 @@ impl Context {
             p.pos = std::cmp::min(p.pos + dist, max_pos);
         })
     }
+
     pub fn move_prev(&self, pos: &mut Pos) {
         let subpos = pos.with(|p| p.subpos);
         match subpos > 0 {
@@ -237,6 +361,7 @@ impl Context {
             false => self.move_up(1, pos),
         }
     }
+
     pub fn move_next(&self, index: usize, pos: &mut Pos) {
         let entry = self.get_entry(index);
         let subpos = pos.with(|p| p.subpos);
@@ -245,12 +370,14 @@ impl Context {
         }
         self.move_down(1, pos);
     }
+
     pub fn open_menu(&self, index: usize, pos: &mut Pos) {
         let entry = self.get_entry(index);
         if entry.actions.len() > 1 {
             pos.with_mut(|s| s.subpos += 1);
         }
     }
+
     #[inline]
     pub fn close_menu(&self, pos: &mut Pos) {
         pos.with_mut(|s| s.subpos = 0);

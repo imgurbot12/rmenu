@@ -15,7 +15,7 @@ fn _true() -> bool {
 
 /// Global RMenu Complete Configuration
 #[derive(Debug, PartialEq, Deserialize)]
-#[serde(default)]
+#[serde(default, deny_unknown_fields)]
 pub struct Config {
     pub css: Option<String>,
     pub terminal: Option<String>,
@@ -246,6 +246,8 @@ pub struct KeyConfig {
     pub close_menu: Vec<Keybind>,
     pub jump_next: Vec<Keybind>,
     pub jump_prev: Vec<Keybind>,
+    pub mode_next: Vec<Keybind>,
+    pub mode_prev: Vec<Keybind>,
 }
 
 impl Default for KeyConfig {
@@ -259,6 +261,11 @@ impl Default for KeyConfig {
             close_menu: vec![Keybind::new(Code::ArrowLeft)],
             jump_next: vec![Keybind::new(Code::PageDown)],
             jump_prev: vec![Keybind::new(Code::PageUp)],
+            mode_next: vec![Keybind::new(Code::Tab)],
+            mode_prev: vec![Keybind {
+                mods: Modifiers::SHIFT,
+                key: Code::Tab,
+            }],
         };
     }
 }

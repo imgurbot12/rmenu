@@ -37,7 +37,7 @@ gen_direct() {
 }
 
 #: desc  => generate confirmation entry
-#: usage => $icon $name $cmd 
+#: usage => $icon $name $cmd
 gen_confirm() {
   rmenu-build entry -n "$2" -I "$1" -a "`rmenu-build action "$SELF confirm '$2:$3'"`"
 }

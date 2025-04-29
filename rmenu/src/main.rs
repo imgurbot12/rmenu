@@ -31,11 +31,6 @@ fn main() -> cli::Result<()> {
 
     // update config based on cli-settings and entries
     config = cli.update_config(config);
-    config.use_icons = config.use_icons
-        && entries
-            .iter()
-            .any(|e| e.icon.is_some() || e.icon_alt.is_some());
-    config.use_comments = config.use_comments && entries.iter().any(|e| e.comment.is_some());
 
     // load additional configuration settings from env
     cli.load_env(&mut config)?;
@@ -53,6 +48,7 @@ fn main() -> cli::Result<()> {
         .with_css(css)
         .with_theme(theme)
         .with_config(config)
+        .with_modes(cli.show)
         .with_entries(entries)
         .with_bg_threads(cli.threads)
         .build();

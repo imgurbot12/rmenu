@@ -6,8 +6,8 @@ mod entry;
 mod image;
 mod state;
 
-pub use state::ContextBuilder;
 use state::{Context, ContextMenu, Position};
+pub use state::{ContextBuilder, Entries};
 
 const DEFAULT_CSS_CONTENT: &'static str = include_str!("../../public/default.css");
 
@@ -82,7 +82,7 @@ fn gui_main() -> Element {
         let pos = position.with(|p| p.pos);
         let index = results.with(|r| r.get(pos).cloned().unwrap_or(0));
         // handle events
-        context.handle_keybinds(e, index, &mut position);
+        context.handle_keybinds(e, index, &mut position, &mut results);
     };
 
     // handle quit event
@@ -184,6 +184,7 @@ fn gui_entry(mut row: Row) -> Element {
     let entry = context.get_entry(row.entry_index);
     let hover_select = context.config.hover_select;
     let (pos, subpos) = row.position.with(|p| (p.pos, p.subpos));
+
     // build element from entry
     let single_click = context.config.single_click;
     let context_menu = context.config.context_menu;
@@ -192,9 +193,49 @@ fn gui_entry(mut row: Row) -> Element {
     let rclass = (pos == row.search_index && subpos == 0)
         .then_some("selected")
         .unwrap_or_default();
-    let result_ctx1 = use_context::<Ctx>();
-    let result_ctx2 = use_context::<Ctx>();
+
+    // context menu event handler
+    let contextmenu = move |e: Event<MouseData>| {
+        if context_menu {
+            let mouse: MouseData = e.downcast::<SerializedMouseData>().cloned().unwrap().into();
+            let coords = mouse.page_coordinates();
+            row.ctx_menu.with_mut(|c| c.set(row.entry_index, coords));
+        }
+    };
+
+    // mouse enter event handler
     let menu_active = row.ctx_menu.with(|m| m.is_active());
+    let mouseenter = move |_| {
+        if hover_select && !menu_active {
+            row.position.with_mut(|p| p.set(row.search_index, 0));
+        }
+    };
+
+    // onclick event handler
+    let result_ctx1 = use_context::<Ctx>();
+    let onclick = move |_| {
+        row.position.with_mut(|p| p.set(row.search_index, 0));
+        if single_click && !menu_active {
+            let mut pos = row.position.clone();
+            result_ctx1
+                .write()
+                .expect("failed to write ctx")
+                .execute(row.entry_index, &mut pos);
+        }
+    };
+
+    // doubleclick event handler
+    let result_ctx2 = use_context::<Ctx>();
+    let doubleclick = move |_| {
+        if !menu_active {
+            let mut pos = row.position.clone();
+            result_ctx2
+                .write()
+                .expect("failed to write ctx")
+                .execute(row.entry_index, &mut pos);
+        }
+    };
+
     rsx! {
         div {
             class: "result-entry",
@@ -203,37 +244,12 @@ fn gui_entry(mut row: Row) -> Element {
                 id: "result-{row.search_index}",
                 class: "result {rclass}",
                 // actions
-                oncontextmenu: move |e| {
-                    if context_menu {
-                        let mouse: MouseData = e
-                            .downcast::<SerializedMouseData>()
-                            .cloned()
-                            .unwrap()
-                            .into();
-                        let coords = mouse.page_coordinates();
-                        row.ctx_menu.with_mut(|c| c.set(row.entry_index, coords));
-                    }
-                },
-                onmouseenter: move |_| {
-                    if hover_select && !menu_active {
-                        row.position.with_mut(|p| p.set(row.search_index, 0));
-                    }
-                },
-                onclick: move |_| {
-                    row.position.with_mut(|p| p.set(row.search_index, 0));
-                    if single_click && !menu_active {
-                        let mut pos = row.position.clone();
-                        result_ctx1.write().expect("failed to write ctx").execute(row.entry_index, &mut pos);
-                    }
-                },
-                ondoubleclick: move |_| {
-                    if !menu_active {
-                        let mut pos = row.position.clone();
-                        result_ctx2.write().expect("failed to write ctx").execute(row.entry_index, &mut pos);
-                    }
-                },
+                oncontextmenu: contextmenu,
+                onmouseenter: mouseenter,
+                onclick: onclick,
+                ondoubleclick: doubleclick,
                 // content
-                if context.config.use_icons {
+                if context.use_icons {
                     {rsx! {
                         div {
                             class: "icon",
@@ -241,7 +257,7 @@ fn gui_entry(mut row: Row) -> Element {
                         }
                     }}
                 }
-                if context.config.use_comments {
+                if context.use_comments {
                     {rsx! {
                         div {
                             class: "name",

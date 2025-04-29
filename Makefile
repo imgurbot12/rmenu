@@ -33,8 +33,8 @@ package: build deploy
 deploy:
 	mkdir -p ${DEST}/plugins ${INSTALL}
 	cp -vfr themes ${DEST}/.
-	cp -vfr other-plugins/* ${DEST}/plugins/.
-	cp -vfr plugin-emoji/css/* ${DEST}/plugins/css/.
+	cp -vfr plugins/misc/* ${DEST}/plugins/.
+	cp -vfr plugins/emoji/css/* ${DEST}/plugins/css/.
 	cp -vf ./target/release/rmenu ${INSTALL}/rmenu
 	cp -vf ./target/release/rmenu-build ${INSTALL}/rmenu-build
 	cp -vf ./target/release/desktop ${DEST}/plugins/rmenu-desktop

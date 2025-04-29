@@ -1,7 +1,10 @@
-# global search settings
-use_icons:    true
-ignore_case:  true
-search_regex: false
+# global config settings
+use_icons: true
+
+# search settings
+search:
+  ignore_case:  true
+  search_regex: false
 
 # window settings
 window:
@@ -80,3 +83,5 @@ keybinds:
   jump_prev:  ["Page-Up"]
   open_menu:  ["Arrow-Right"]
   close_menu: ["Arrow-Left"]
+  mode_next:  ["Ctrl+Tab"]
+  mode_prev:  ["Ctrl+Shift+Tab"]

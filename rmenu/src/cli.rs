@@ -11,6 +11,7 @@ use rmenu_plugin::{Entry, Message};
 use thiserror::Error;
 
 use crate::config::{cfg_replace, Config, Keybind};
+use crate::gui::Entries;
 use crate::{DEFAULT_CONFIG, DEFAULT_THEME, ENV_ACTIVE_PLUGINS, XDG_PREFIX};
 
 /// Allowed Formats for Entry Ingestion
@@ -53,6 +54,9 @@ pub struct Args {
     /// Plugins to run
     #[arg(short, long)]
     run: Vec<String>,
+    /// Limit which plugins are active
+    #[arg(short, long)]
+    pub show: Vec<String>,
     /// Override default configuration path
     #[arg(short, long, env = "RMENU_CONFIG")]
     config: Option<PathBuf>,
@@ -134,6 +138,12 @@ pub struct Args {
     /// Override jump-previous keybind
     #[arg(long)]
     key_jump_prev: Option<Vec<Keybind>>,
+    /// Override next plugin keybind
+    #[arg(long)]
+    key_mode_next: Option<Vec<Keybind>>,
+    /// Override prev plugin keybind
+    #[arg(long)]
+    key_mode_prev: Option<Vec<Keybind>>,
 
     //window settings
     /// Override Window Title
@@ -206,6 +216,7 @@ impl Args {
     pub fn get_config(&self) -> Result<Config> {
         let config = self.find_xdg_file(DEFAULT_CONFIG, &self.config);
         if let Some(path) = config {
+            log::debug!("loading config: {path:?}");
             let config: Config = match read_to_string(path) {
                 Ok(content) => serde_yaml::from_str(&content),
                 Err(err) => {
@@ -245,6 +256,8 @@ impl Args {
         cfg_replace!(config.keybinds.close_menu, self.key_close_menu, true);
         cfg_replace!(config.keybinds.jump_next, self.key_jump_next, true);
         cfg_replace!(config.keybinds.jump_prev, self.key_jump_prev, true);
+        cfg_replace!(config.keybinds.mode_next, self.key_mode_next, true);
+        cfg_replace!(config.keybinds.mode_prev, self.key_move_prev, true);
         // override window settings
         cfg_replace!(config.window.title, self.title, true);
         cfg_replace!(config.window.size.width, self.width, true);
@@ -325,8 +338,8 @@ impl Args {
     }
 
     /// Read Entries from a Plugin Source
-    fn load_plugins(&mut self, config: &mut Config) -> Result<Vec<Entry>> {
-        let mut entries = vec![];
+    fn load_plugins(&mut self, config: &mut Config) -> Result<Entries> {
+        let mut entries = Entries::new();
         for name in self.run.clone().into_iter() {
             // retrieve plugin configuration
             log::info!("running plugin: {name:?}");
@@ -346,7 +359,7 @@ impl Args {
                 Err(err) => log::error!("cache read failed: {err:?}"),
                 Ok(cached) => {
                     log::debug!("plugin {name:?} loaded entries from cache");
-                    entries.extend(cached);
+                    entries.push((name, cached));
                     continue;
                 }
             }
@@ -381,6 +394,7 @@ impl Args {
             if config.search.placeholder.is_none() {
                 config.search.placeholder = plugin.placeholder.clone();
             }
+            let plugin_name = name.clone();
             let write_entries = entry.clone();
             self.threads
                 .push(std::thread::spawn(move || match crate::cache::write_cache(
@@ -392,23 +406,24 @@ impl Args {
                     Err(err) => log::error!("cache write error: {err:?}"),
                 }));
             // write collected entries to main output
-            entries.append(&mut entry);
+            entries.push((plugin_name, entry));
         }
         Ok(entries)
     }
 
     /// Load Entries from Enabled/Configured Entry-Sources
-    pub fn get_entries(&mut self, config: &mut Config) -> Result<Vec<Entry>> {
+    pub fn get_entries(&mut self, config: &mut Config) -> Result<Entries> {
         // configure default source if none are given
         let mut input = self.input.clone();
-        let mut entries = vec![];
+        let mut entries = Entries::new();
         if input.is_none() && self.run.is_empty() {
             input = Some("-".to_owned());
         }
         // load entries
         if let Some(input) = input {
-            entries.extend(self.load_input(&input, config)?);
+            entries.push(("stdin".to_owned(), self.load_input(&input, config)?));
         }
+
         entries.extend(self.load_plugins(config)?);
         Ok(entries)
     }
