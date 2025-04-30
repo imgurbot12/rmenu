@@ -3,9 +3,10 @@ resolver = "2"
 members = [
   "rmenu",
   "rmenu-plugin",
-  "plugins/run",
   "plugins/desktop",
   "plugins/emoji",
+  "plugins/files",
   "plugins/network",
-  "plugins/window",
+  "plugins/run",
+  "plugins/window", "plugins/files",
 ]

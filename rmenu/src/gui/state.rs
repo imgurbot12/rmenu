@@ -5,15 +5,12 @@ use rmenu_plugin::Entry;
 use crate::config::{Config, Keybind};
 use crate::server::Server;
 
-type Threads = Vec<std::thread::JoinHandle<()>>;
-
 /// Builder Object for Constructing Context
 #[derive(Debug, Default)]
 pub struct ContextBuilder {
     css: String,
     theme: String,
     config: Option<Config>,
-    threads: Threads,
 }
 
 impl ContextBuilder {

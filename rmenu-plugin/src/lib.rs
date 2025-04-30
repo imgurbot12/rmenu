@@ -25,6 +25,7 @@ impl Method {
 pub struct Action {
     pub name: String,
     pub exec: Method,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
 }
 
@@ -48,13 +49,16 @@ impl Action {
 }
 
 /// RMenu Menu-Entry Implementation
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Default, Serialize, Deserialize)]
 #[serde(tag = "type", rename = "entry")]
 pub struct Entry {
     pub name: String,
     pub actions: Vec<Action>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub comment: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_alt: Option<String>,
 }
 

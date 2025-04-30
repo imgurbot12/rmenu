@@ -12,7 +12,7 @@ all: install sway
 #: deploy sway configuration to sway config folder
 sway:
 	echo "Installing Configuration for Sway"
-	sudo cp -vf ./rmenu/public/99-rmenu-sway.conf ${SWAY_CONF}/.
+	sudo cp -f ./rmenu/public/99-rmenu-sway.conf ${SWAY_CONF}/.
 
 #: clean remaining build artifcats
 clean:
@@ -32,17 +32,18 @@ package: build deploy
 #: locally deploy build-artifcats into their designated locations
 deploy:
 	mkdir -p ${DEST}/plugins ${INSTALL}
-	cp -vfr themes ${DEST}/.
-	cp -vfr plugins/misc/* ${DEST}/plugins/.
-	cp -vfr plugins/emoji/css/* ${DEST}/plugins/css/.
-	cp -vf ./target/release/rmenu ${INSTALL}/rmenu
-	cp -vf ./target/release/rmenu-build ${INSTALL}/rmenu-build
-	cp -vf ./target/release/desktop ${DEST}/plugins/rmenu-desktop
-	cp -vf ./target/release/emoji   ${DEST}/plugins/rmenu-emoji
-	cp -vf ./target/release/run ${DEST}/plugins/rmenu-run
-	cp -vf ./target/release/network ${DEST}/plugins/rmenu-network
-	cp -vf ./target/release/window ${DEST}/plugins/rmenu-window
-	cp -vf ./rmenu/public/config.yaml ${DEST}/config.yaml
+	cp -fr themes ${DEST}/.
+	cp -fr plugins/misc/* ${DEST}/plugins/.
+	cp -fr plugins/emoji/css/* ${DEST}/plugins/css/.
+	cp -f ./target/release/rmenu ${INSTALL}/rmenu
+	cp -f ./target/release/rmenu-build ${INSTALL}/rmenu-build
+	cp -f ./target/release/desktop ${DEST}/plugins/rmenu-desktop
+	cp -f ./target/release/emoji   ${DEST}/plugins/rmenu-emoji
+	cp -f ./target/release/files   ${DEST}/plugins/rmenu-files
+	cp -f ./target/release/network ${DEST}/plugins/rmenu-network
+	cp -f ./target/release/run ${DEST}/plugins/rmenu-run
+	cp -f ./target/release/window ${DEST}/plugins/rmenu-window
+	cp -f ./rmenu/public/config.yaml ${DEST}/config.yaml
 	ln -sf  ${DEST}/themes/dark.css ${DEST}/style.css
 
 #: build rmenu and its various plugins
@@ -55,8 +56,9 @@ build-rmenu:
 
 #: build rmenu plugin binaries
 build-plugins:
-	${CARGO} build -p run ${FLAGS}
 	${CARGO} build -p desktop ${FLAGS}
 	${CARGO} build -p emoji ${FLAGS}
+	${CARGO} build -p files ${FLAGS}
 	${CARGO} build -p network ${FLAGS}
+	${CARGO} build -p run ${FLAGS}
 	${CARGO} build -p window ${FLAGS}

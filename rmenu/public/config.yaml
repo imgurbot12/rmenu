@@ -41,6 +41,10 @@ plugins:
       key_move_next: ["Arrow-Right"]
       key_jump_prev: ["Arrow-Up"]
       key_jump_next: ["Arrow-Down"]
+  files:
+    exec:  ["~/.config/rmenu/plugins/rmenu-files"]
+    cache: false
+    placeholder: "Search for a file"
   emoji:
     exec:  ["~/.config/rmenu/plugins/rmenu-emoji"]
     cache: false
