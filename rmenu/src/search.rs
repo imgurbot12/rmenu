@@ -1,16 +1,14 @@
 //! RMENU Entry Search Function Implementaton
 use regex::RegexBuilder;
-use rmenu_plugin::Entry;
-
-use crate::config::Config;
+use rmenu_plugin::{Entry, Search};
 
 /// Generate a new dynamic Search Function based on
 /// Configurtaion Settings and Search-String
-pub fn new_searchfn(cfg: &Config, search: &str) -> Box<dyn Fn(&Entry) -> bool> {
+pub fn new_searchfn(search: &Search) -> Box<dyn Fn(&Entry) -> bool> {
     // build regex search expression
-    if cfg.search.use_regex {
-        let rgx = RegexBuilder::new(search)
-            .case_insensitive(cfg.search.ignore_case)
+    if search.is_regex {
+        let rgx = RegexBuilder::new(&search.search)
+            .case_insensitive(search.ignore_case)
             .build();
         let Ok(regex) = rgx else {
             return Box::new(|_| false);
@@ -26,8 +24,8 @@ pub fn new_searchfn(cfg: &Config, search: &str) -> Box<dyn Fn(&Entry) -> bool> {
         });
     }
     // build case-insensitive search expression
-    if cfg.search.ignore_case {
-        let matchstr = search.to_lowercase();
+    if search.ignore_case {
+        let matchstr = search.search.to_lowercase();
         return Box::new(move |entry: &Entry| {
             if entry.name.to_lowercase().contains(&matchstr) {
                 return true;
@@ -39,7 +37,7 @@ pub fn new_searchfn(cfg: &Config, search: &str) -> Box<dyn Fn(&Entry) -> bool> {
         });
     }
     // build standard normal string comparison function
-    let matchstr = search.to_owned();
+    let matchstr = search.search.to_owned();
     Box::new(move |entry: &Entry| {
         if entry.name.contains(&matchstr) {
             return true;

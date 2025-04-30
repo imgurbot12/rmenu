@@ -148,12 +148,22 @@ pub struct Options {
     pub window_height: Option<f64>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Search {
+    pub search: String,
+    #[serde(default)]
+    pub is_regex: bool,
+    #[serde(default)]
+    pub ignore_case: bool,
+}
+
 /// Valid RMenu Plugin Messages
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum Message {
     Entry(Entry),
     Options(Options),
+    Stop,
 }
 
 /// Retrieve EXE of Self

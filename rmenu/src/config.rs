@@ -1,5 +1,6 @@
 ///! File Based Configuration for RMenu
 use std::collections::BTreeMap;
+use std::fmt::Display;
 use std::str::FromStr;
 
 use rmenu_plugin::Options;
@@ -231,11 +232,39 @@ impl FromStr for CacheSetting {
 pub struct PluginConfig {
     pub exec: Vec<String>,
     #[serde(default)]
+    pub format: Format,
+    #[serde(default)]
     pub cache: CacheSetting,
     #[serde(default)]
     pub placeholder: Option<String>,
     #[serde(default)]
     pub options: Option<Options>,
+}
+
+/// Allowed Formats for Entry Ingestion
+#[derive(Debug, Clone, PartialEq, Default)]
+pub enum Format {
+    #[default]
+    Json,
+    DMenu,
+}
+
+impl Display for Format {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("{self:?}").to_lowercase())
+    }
+}
+
+impl FromStr for Format {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_ascii_lowercase().as_str() {
+            "json" => Ok(Format::Json),
+            "dmenu" => Ok(Format::DMenu),
+            _ => Err("No Such Format".to_owned()),
+        }
+    }
 }
 
 /// GUI Keybind Settings Options
@@ -346,6 +375,7 @@ macro_rules! de_fromstr {
 }
 
 // implement `Deserialize` using `FromStr`
+de_fromstr!(Format);
 de_fromstr!(CacheSetting);
 de_fromstr!(Keybind);
 

@@ -4,8 +4,10 @@ mod config;
 mod exec;
 mod gui;
 mod search;
+mod server;
 
 use clap::Parser;
+use server::Server;
 
 static DEFAULT_THEME: &'static str = "style.css";
 static DEFAULT_CONFIG: &'static str = "config.yaml";
@@ -16,7 +18,7 @@ static ENV_ACTIVE_PLUGINS: &'static str = "RMENU_ACTIVE_PLUGINS";
 
 //TODO: remove min-length from search options in rmenu-lib
 
-fn main() -> cli::Result<()> {
+fn main() -> server::Result<()> {
     env_logger::init();
 
     // export self to environment for other scripts
@@ -27,7 +29,8 @@ fn main() -> cli::Result<()> {
     let mut cli = cli::Args::parse();
     let mut config = cli.get_config()?;
 
-    let entries = cli.get_entries(&mut config)?;
+    // spawn plugin server
+    let server = Server::start(&mut config, cli.run.clone(), cli.show.clone())?;
 
     // update config based on cli-settings and entries
     config = cli.update_config(config);
@@ -48,10 +51,7 @@ fn main() -> cli::Result<()> {
         .with_css(css)
         .with_theme(theme)
         .with_config(config)
-        .with_modes(cli.show)
-        .with_entries(entries)
-        .with_bg_threads(cli.threads)
-        .build();
+        .build(server);
     gui::run(context);
 
     Ok(())

@@ -6,8 +6,8 @@ mod entry;
 mod image;
 mod state;
 
+pub use state::ContextBuilder;
 use state::{Context, ContextMenu, Position};
-pub use state::{ContextBuilder, Entries};
 
 const DEFAULT_CSS_CONTENT: &'static str = include_str!("../../public/default.css");
 
@@ -128,6 +128,7 @@ fn gui_main() -> Element {
                         value: "{search}",
                         pattern: pattern,
                         maxlength: maxlength,
+                        placeholder: "{context.placeholder}",
                         oninput: move |e| search.set(e.value()),
                     }
                 }

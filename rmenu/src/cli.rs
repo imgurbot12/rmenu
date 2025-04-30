@@ -1,17 +1,12 @@
 ///! CLI Argument Based Configuration and Application Setup
-use std::fs::File;
-use std::io::{BufRead, BufReader, Read};
 use std::path::PathBuf;
-use std::process::{Command, ExitStatus, Stdio};
 use std::str::FromStr;
 use std::{fmt::Display, fs::read_to_string};
 
 use clap::Parser;
-use rmenu_plugin::{Entry, Message};
-use thiserror::Error;
 
 use crate::config::{cfg_replace, Config, Keybind};
-use crate::gui::Entries;
+use crate::server::{RMenuError, Result};
 use crate::{DEFAULT_CONFIG, DEFAULT_THEME, ENV_ACTIVE_PLUGINS, XDG_PREFIX};
 
 /// Allowed Formats for Entry Ingestion
@@ -53,7 +48,7 @@ pub struct Args {
     format: Format,
     /// Plugins to run
     #[arg(short, long)]
-    run: Vec<String>,
+    pub run: Vec<String>,
     /// Limit which plugins are active
     #[arg(short, long)]
     pub show: Vec<String>,
@@ -170,31 +165,7 @@ pub struct Args {
     /// Override Fullscreen Settings
     #[arg(long)]
     fullscreen: Option<bool>,
-
-    // hidden vars
-    #[clap(skip)]
-    pub threads: Vec<std::thread::JoinHandle<()>>,
 }
-
-#[derive(Error, Debug)]
-pub enum RMenuError {
-    #[error("Invalid Config")]
-    InvalidConfig(#[from] serde_yaml::Error),
-    #[error("File Error")]
-    FileError(#[from] std::io::Error),
-    #[error("No Such Plugin")]
-    NoSuchPlugin(String),
-    #[error("Invalid Plugin Specified")]
-    InvalidPlugin(String),
-    #[error("Invalid Keybind Definition")]
-    InvalidKeybind(String),
-    #[error("Command Runtime Exception")]
-    CommandError(Option<ExitStatus>),
-    #[error("Invalid JSON Entry Object")]
-    InvalidJson(#[from] serde_json::Error),
-}
-
-pub type Result<T> = std::result::Result<T, RMenuError>;
 
 impl Args {
     /// Find a specifically named file across xdg config paths
@@ -306,133 +277,19 @@ impl Args {
             .unwrap_or_else(String::new)
     }
 
-    fn read_entries<T: Read>(
-        &mut self,
-        r: BufReader<T>,
-        v: &mut Vec<Entry>,
-        c: &mut Config,
-    ) -> Result<()> {
-        for line in r.lines().filter_map(|l| l.ok()) {
-            match &self.format {
-                Format::DMenu => v.push(Entry::echo(line.trim(), None)),
-                Format::Json => {
-                    let msg: Message = serde_json::from_str(&line)?;
-                    match msg {
-                        Message::Entry(entry) => v.push(entry),
-                        Message::Options(options) => c
-                            .update(&options)
-                            .map_err(|s| RMenuError::InvalidKeybind(s))?,
-                    }
-                }
-            }
-        }
-        Ok(())
-    }
-
-    /// Read Entries from a Configured Input
-    fn load_input(&mut self, input: &str, config: &mut Config) -> Result<Vec<Entry>> {
-        // retrieve input file
-        let input = if input == "-" { "/dev/stdin" } else { input };
-        let fpath = shellexpand::tilde(input).to_string();
-        // read entries into iterator and collect
-        log::info!("reading from: {fpath:?}");
-        let file = File::open(fpath)?;
-        let reader = BufReader::new(file);
-        let mut entries = vec![];
-        self.read_entries(reader, &mut entries, config)?;
-        Ok(entries)
-    }
-
-    /// Read Entries from a Plugin Source
-    fn load_plugins(&mut self, config: &mut Config) -> Result<Entries> {
-        let mut entries = Entries::new();
-        for name in self.run.clone().into_iter() {
-            // retrieve plugin configuration
-            log::info!("running plugin: {name:?}");
-            let plugin = config
-                .plugins
-                .get(&name)
-                .cloned()
-                .ok_or_else(|| RMenuError::NoSuchPlugin(name.to_owned()))?;
-            // update config w/ plugin options when available
-            if let Some(options) = plugin.options.as_ref() {
-                config
-                    .update(options)
-                    .map_err(|e| RMenuError::InvalidKeybind(e))?;
-            }
-            // read cache when available
-            match crate::cache::read_cache(&name, &plugin) {
-                Err(err) => log::error!("cache read failed: {err:?}"),
-                Ok(cached) => {
-                    log::debug!("plugin {name:?} loaded entries from cache");
-                    entries.push((name, cached));
-                    continue;
-                }
-            }
-            // build command arguments
-            let args: Vec<String> = plugin
-                .exec
-                .iter()
-                .map(|s| shellexpand::tilde(s).to_string())
-                .collect();
-            let main = args
-                .get(0)
-                .ok_or_else(|| RMenuError::InvalidPlugin(name.to_owned()))?;
-            // spawn command
-            log::debug!("plugin {name:?} reading from command output");
-            let mut command = Command::new(main)
-                .args(&args[1..])
-                .stdout(Stdio::piped())
-                .spawn()?;
-            let stdout = command
-                .stdout
-                .as_mut()
-                .ok_or_else(|| RMenuError::CommandError(None))?;
-            // parse and read entries into vector of results
-            let reader = BufReader::new(stdout);
-            let mut entry = vec![];
-            self.read_entries(reader, &mut entry, config)?;
-            let status = command.wait()?;
-            if !status.success() {
-                return Err(RMenuError::CommandError(Some(status)));
-            }
-            // finalize settings and save to cache
-            if config.search.placeholder.is_none() {
-                config.search.placeholder = plugin.placeholder.clone();
-            }
-            let plugin_name = name.clone();
-            let write_entries = entry.clone();
-            self.threads
-                .push(std::thread::spawn(move || match crate::cache::write_cache(
-                    &name,
-                    &plugin,
-                    &write_entries,
-                ) {
-                    Ok(_) => {}
-                    Err(err) => log::error!("cache write error: {err:?}"),
-                }));
-            // write collected entries to main output
-            entries.push((plugin_name, entry));
-        }
-        Ok(entries)
-    }
-
-    /// Load Entries from Enabled/Configured Entry-Sources
-    pub fn get_entries(&mut self, config: &mut Config) -> Result<Entries> {
-        // configure default source if none are given
-        let mut input = self.input.clone();
-        let mut entries = Entries::new();
-        if input.is_none() && self.run.is_empty() {
-            input = Some("-".to_owned());
-        }
-        // load entries
-        if let Some(input) = input {
-            entries.push(("stdin".to_owned(), self.load_input(&input, config)?));
-        }
-
-        entries.extend(self.load_plugins(config)?);
-        Ok(entries)
-    }
+    // /// Read Entries from a Configured Input
+    // fn load_input(&mut self, input: &str, config: &mut Config) -> Result<Vec<Entry>> {
+    //     // retrieve input file
+    //     let input = if input == "-" { "/dev/stdin" } else { input };
+    //     let fpath = shellexpand::tilde(input).to_string();
+    //     // read entries into iterator and collect
+    //     log::info!("reading from: {fpath:?}");
+    //     let file = File::open(fpath)?;
+    //     let reader = BufReader::new(file);
+    //     let mut entries = vec![];
+    //     self.read_entries(reader, &mut entries, config)?;
+    //     Ok(entries)
+    // }
 
     /// Configure Environment Variables for Multi-Stage Execution
     pub fn set_env(&self) {

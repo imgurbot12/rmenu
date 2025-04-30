@@ -3,11 +3,9 @@ use dioxus::prelude::*;
 use rmenu_plugin::Entry;
 
 use crate::config::{Config, Keybind};
-use crate::search::new_searchfn;
+use crate::server::Server;
 
 type Threads = Vec<std::thread::JoinHandle<()>>;
-
-pub type Entries = Vec<(String, Vec<Entry>)>;
 
 /// Builder Object for Constructing Context
 #[derive(Debug, Default)]
@@ -15,8 +13,6 @@ pub struct ContextBuilder {
     css: String,
     theme: String,
     config: Option<Config>,
-    modes: Vec<String>,
-    entries: Entries,
     threads: Threads,
 }
 
@@ -33,37 +29,23 @@ impl ContextBuilder {
         self.config = Some(config);
         self
     }
-    pub fn with_modes(mut self, modes: Vec<String>) -> Self {
-        self.modes = modes;
-        self
-    }
-    pub fn with_entries(mut self, entries: Entries) -> Self {
-        self.entries = entries;
-        self
-    }
-    pub fn with_bg_threads(mut self, threads: Threads) -> Self {
-        self.threads = threads;
-        self
-    }
-    pub fn build(self) -> Context {
-        let cfg = self.config.unwrap_or_default();
-        let mut ctx = Context {
+    pub fn build(self, mut server: Server) -> Context {
+        let mut cfg = self.config.unwrap_or_default();
+        let entries = server.search(&mut cfg, "").expect("initial search failed");
+        Context {
             quit: false,
             css: self.css,
             theme: self.theme,
+            placeholder: cfg.search.placeholder.clone().unwrap_or_default(),
             use_icons: cfg.use_icons,
             use_comments: cfg.use_comments,
             config: cfg,
 
+            server,
             search: String::new(),
-            modes: self.modes,
-            entries: vec![],
-            all_entries: self.entries,
-            num_results: 0,
-            threads: self.threads,
-        };
-        ctx.update_entries();
-        ctx
+            num_results: entries.len(),
+            entries,
+        }
     }
 }
 
@@ -123,102 +105,28 @@ pub struct Context {
     pub css: String,
     pub theme: String,
     pub config: Config,
+    pub placeholder: String,
     pub use_icons: bool,
     pub use_comments: bool,
     // search results and controls
+    server: Server,
     search: String,
-    modes: Vec<String>,
     entries: Vec<Entry>,
-    all_entries: Entries,
     num_results: usize,
-    threads: Threads,
 }
 
 impl Context {
     // ** Mode Management **
 
-    fn update_entries(&mut self) {
-        self.entries = vec![];
-        if self.modes.is_empty() {
-            let mode = self
-                .all_entries
-                .iter()
-                .map(|(k, _)| k)
-                .take(1)
-                .next()
-                .expect("empty entries");
-            log::warn!("no mode specified. defaulting to {mode:?}");
-            self.modes = vec![mode.to_owned()];
-        }
-        for mode in self.modes.iter() {
-            let entries = self
-                .all_entries
-                .iter()
-                .find(|(k, _)| k == mode)
-                .map(|(_, v)| v)
-                .expect("invalid mode");
-            let entries = entries.into_iter().cloned();
-            self.entries.extend(entries);
-        }
-        self.num_results = self.entries.len();
-        self.use_icons = self.config.use_icons
-            && self
-                .entries
-                .iter()
-                .any(|e| e.icon.is_some() || e.icon_alt.is_some());
-        self.use_comments =
-            self.config.use_comments && self.entries.iter().any(|e| e.comment.is_some());
-    }
-
-    fn get_mode_index(&self) -> usize {
-        self.all_entries
-            .iter()
-            .map(|(k, _)| k)
-            .enumerate()
-            .find(|(_, k)| self.modes.last().expect("no active modes") == *k)
-            .map(|(i, _)| i)
-            .expect("invalid mode present")
-    }
-
     pub fn next_mode(&mut self, pos: &mut Pos, results: &mut Results) {
         let _ = pos.with_mut(|p| p.reset());
-        let index = self.get_mode_index();
-        let mode = match index == self.all_entries.len() - 1 {
-            true => self.all_entries.first().expect("empty entries").0.clone(),
-            false => self
-                .all_entries
-                .iter()
-                .map(|(k, _)| k)
-                .skip(index + 1)
-                .take(1)
-                .next()
-                .expect("cannot find next mode")
-                .to_owned(),
-        };
-        log::info!("switching to next mode: {mode:?}");
-        self.modes = vec![mode];
-        self.update_entries();
+        self.server.next_plugin();
         results.set(self.set_search(&self.search.clone(), pos));
     }
 
     pub fn prev_mode(&mut self, pos: &mut Pos, results: &mut Results) {
         let _ = pos.with_mut(|p| p.reset());
-        let index = self.get_mode_index();
-        let mode = match index == 0 {
-            true => self.all_entries.last().expect("empty entries").0.clone(),
-            false => self
-                .all_entries
-                .iter()
-                .map(|(k, _)| k)
-                .skip(index - 1)
-                .take(1)
-                .next()
-                .expect("cannot find prev mode")
-                .to_owned(),
-        };
-        log::info!("switching to prev mode: {mode:?}");
-        self.modes = vec![mode];
-        self.update_entries();
+        self.server.prev_plugin();
         results.set(self.set_search(&self.search.clone(), pos));
     }
 
@@ -230,17 +138,21 @@ impl Context {
 
     pub fn set_search(&mut self, search: &str, pos: &mut Pos) -> Vec<usize> {
         let _ = pos.with_mut(|p| p.reset());
-        let filter = new_searchfn(&self.config, &search);
-        let results: Vec<usize> = self
-            .entries
-            .iter()
-            .enumerate()
-            .filter(|(_, e)| filter(e))
-            .map(|(i, _)| i)
-            .collect();
         self.search = search.to_owned();
-        self.num_results = results.len();
-        results
+        self.entries = self
+            .server
+            .search(&mut self.config, search)
+            .expect("search failed");
+        self.num_results = self.entries.len();
+        self.placeholder = self.server.placeholder(&self.config);
+        self.use_icons = self.config.use_icons
+            && self
+                .entries
+                .iter()
+                .any(|e| e.icon.is_some() || e.icon_alt.is_some());
+        self.use_comments =
+            self.config.use_comments && self.entries.iter().any(|e| e.comment.is_some());
+        (0..self.num_results).collect()
     }
 
     pub fn calc_limit(&self, pos: &Pos) -> usize {
@@ -287,7 +199,10 @@ impl Context {
 
     //NOTE: using with_mut to trigger rendering update
     pub fn execute(&mut self, index: usize, pos: &mut Pos) {
-        let entry = self.get_entry(index);
+        let Some(entry) = self.entries.get(index) else {
+            log::error!("execute => invalid index {index:?}");
+            return;
+        };
         let (pos, subpos) = pos.with_mut(|p| (p.pos, p.subpos));
         log::debug!("execute-pos {pos} {subpos}");
         let Some(action) = entry.actions.get(subpos) else {
@@ -363,7 +278,10 @@ impl Context {
     }
 
     pub fn move_next(&self, index: usize, pos: &mut Pos) {
-        let entry = self.get_entry(index);
+        let Some(entry) = self.entries.get(index) else {
+            log::error!("move_next => invalid index {index:?}");
+            return;
+        };
         let subpos = pos.with(|p| p.subpos);
         if subpos > 0 && subpos < entry.actions.len() - 1 {
             return pos.with_mut(|p| p.subpos += 1);
@@ -372,7 +290,10 @@ impl Context {
     }
 
     pub fn open_menu(&self, index: usize, pos: &mut Pos) {
-        let entry = self.get_entry(index);
+        let Some(entry) = self.entries.get(index) else {
+            log::error!("open_menu => invalid index {index:?}");
+            return;
+        };
         if entry.actions.len() > 1 {
             pos.with_mut(|s| s.subpos += 1);
         }
@@ -386,10 +307,6 @@ impl Context {
     //** Cleanup  **
 
     pub fn cleanup(&mut self) {
-        log::debug!("cleaning up {} threads", self.threads.len());
-        while !self.threads.is_empty() {
-            let thread = self.threads.pop().unwrap();
-            let _ = thread.join();
-        }
+        self.server.cleanup();
     }
 }
