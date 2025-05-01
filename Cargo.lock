@@ -639,6 +639,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 
 [[package]]
+name = "cmake"
+version = "0.1.54"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7caa3f9de89ddbe2c607f4101924c5abec803763ae9534e4f4d7d8f84aa81f0"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "cocoa"
 version = "0.25.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1792,6 +1801,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "fend-core"
+version = "1.5.6"
+source = "git+https://github.com/printfn/fend?tag=v1.5.6#6746da3ead1c9e2fa2784eaa929f85137034916d"
+
+[[package]]
 name = "field-offset"
 version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2280,6 +2294,48 @@ dependencies = [
  "libc",
  "system-deps 6.2.2",
  "winapi",
+]
+
+[[package]]
+name = "gl"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a94edab108827d67608095e269cf862e60d920f144a5026d3dbcfd8b877fb404"
+dependencies = [
+ "gl_generator",
+]
+
+[[package]]
+name = "gl_generator"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1a95dfc23a2b4a9a2f5ab41d194f8bfda3cabec42af4e39f08c339eb2a0c124d"
+dependencies = [
+ "khronos_api",
+ "log",
+ "xml-rs",
+]
+
+[[package]]
+name = "glfw"
+version = "0.52.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "193969ebf8ae47af8c66c38d0cc64dab4868f57f2e7f2b15f5719829748aec51"
+dependencies = [
+ "bitflags 1.3.2",
+ "glfw-sys",
+ "objc",
+ "raw-window-handle 0.5.2",
+ "winapi",
+]
+
+[[package]]
+name = "glfw-sys"
+version = "4.0.0+3.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5abed6d39a50226676aab893d6b4ad154da7e93fcdfed90d7696758a1b477ed1"
+dependencies = [
+ "cmake",
 ]
 
 [[package]]
@@ -3028,6 +3084,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "khronos_api"
+version = "3.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
+
+[[package]]
 name = "kuchikiki"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3209,6 +3271,46 @@ name = "longest-increasing-subsequence"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3bd0dd2cd90571056fdb71f6275fada10131182f84899f4b2a916e565d81d86"
+
+[[package]]
+name = "luminance"
+version = "0.47.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "edb83392d826ec88cb18dd9caa28cb99e2e5845d9ffbd5c391b118d65046ad1d"
+dependencies = [
+ "luminance-derive",
+]
+
+[[package]]
+name = "luminance-derive"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4bb00ddc3077a19eeb0a4980e8decbfe315626ea6338f0f0347c46d91d3af7de"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "luminance-gl"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e22f32fc6bf80347379063f47ceb4c028a89e03e5bc9fad95a37fe6335afc856"
+dependencies = [
+ "gl",
+ "luminance",
+ "luminance-std140",
+]
+
+[[package]]
+name = "luminance-std140"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "86dde6bf0af98691bd79163f086e2f207e77bb641b89854c2a330babc38253f9"
+dependencies = [
+ "luminance",
+]
 
 [[package]]
 name = "mac"
@@ -3488,6 +3590,12 @@ name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
+
+[[package]]
+name = "nonempty"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aeaf4ad7403de93e699c191202f017118df734d3850b01e13a3a8b2e6953d3c9"
 
 [[package]]
 name = "num-traits"
@@ -4394,6 +4502,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "rgx"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3df33eae25e7f9ae182565d6a95c1f3fba91ad175959e158f331fc3fa6b3272b"
+dependencies = [
+ "gl",
+ "glfw",
+ "log",
+ "luminance",
+ "luminance-derive",
+ "luminance-gl",
+ "nonempty",
+ "termcolor",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "rmenu"
 version = "1.2.2"
 dependencies = [
@@ -4549,6 +4674,20 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "search"
+version = "0.1.0"
+dependencies = [
+ "env_logger",
+ "fend-core",
+ "log",
+ "regex",
+ "rgx",
+ "rmenu-plugin",
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "selectors"
@@ -5176,6 +5315,15 @@ dependencies = [
  "futf",
  "mac",
  "utf-8",
+]
+
+[[package]]
+name = "termcolor"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
+dependencies = [
+ "winapi-util",
 ]
 
 [[package]]
@@ -6533,6 +6681,12 @@ dependencies = [
  "libc",
  "windows-sys 0.59.0",
 ]
+
+[[package]]
+name = "xml-rs"
+version = "0.8.26"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a62ce76d9b56901b19a74f19431b0d8b3bc7ca4ad685a746dfd78ca8f4fc6bda"
 
 [[package]]
 name = "xmlwriter"

@@ -1,8 +1,14 @@
 [package]
-name = "plugin-search"
+name = "search"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+env_logger = "0.11.8"
+fend-core = { git = "https://github.com/printfn/fend", tag = "v1.5.6", version = "1.5.6" }
+log = "0.4.27"
+regex = "1.11.1"
+rgx = "0.9.0"
+rmenu-plugin = { version = "0.0.3", path = "../../rmenu-plugin" }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"

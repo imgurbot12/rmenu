@@ -8,5 +8,6 @@ members = [
   "plugins/files",
   "plugins/network",
   "plugins/run",
-  "plugins/window", "plugins/files",
+  "plugins/search",
+  "plugins/window",
 ]

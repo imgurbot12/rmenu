@@ -42,6 +42,7 @@ deploy:
 	cp -f ./target/release/files   ${DEST}/plugins/rmenu-files
 	cp -f ./target/release/network ${DEST}/plugins/rmenu-network
 	cp -f ./target/release/run ${DEST}/plugins/rmenu-run
+	cp -f ./target/release/search ${DEST}/plugins/rmenu-search
 	cp -f ./target/release/window ${DEST}/plugins/rmenu-window
 	cp -f ./rmenu/public/config.yaml ${DEST}/config.yaml
 	ln -sf  ${DEST}/themes/dark.css ${DEST}/style.css
@@ -61,4 +62,5 @@ build-plugins:
 	${CARGO} build -p files ${FLAGS}
 	${CARGO} build -p network ${FLAGS}
 	${CARGO} build -p run ${FLAGS}
+	${CARGO} build -p search ${FLAGS}
 	${CARGO} build -p window ${FLAGS}

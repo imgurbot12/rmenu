@@ -45,6 +45,9 @@ plugins:
     exec:  ["~/.config/rmenu/plugins/rmenu-files"]
     cache: false
     placeholder: "Search for a file"
+  search:
+    exec: ["~/.config/rmenu/plugins/rmenu-search"]
+    cache: false
   emoji:
     exec:  ["~/.config/rmenu/plugins/rmenu-emoji"]
     cache: false
