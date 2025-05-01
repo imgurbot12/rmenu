@@ -1,6 +1,8 @@
 /// RMenu Plugin Result Entry Server
 use std::collections::HashMap;
-use std::io::{BufRead, BufReader, Write};
+use std::fs::File;
+use std::io::{BufRead, BufReader, Read, Write};
+use std::path::PathBuf;
 use std::process::{Child, Command, ExitStatus, Stdio};
 
 use rmenu_plugin::{Entry, Message, Search};
@@ -45,7 +47,228 @@ impl Cmd {
     }
 }
 
-pub struct Plugin {
+fn new_search(query: &str, config: &Config) -> Search {
+    Search {
+        search: query.to_owned(),
+        is_regex: config.search.use_regex,
+        ignore_case: config.search.ignore_case,
+    }
+}
+
+fn read_entries<T: Read>(
+    format: &Format,
+    config: &mut Config,
+    reader: BufReader<T>,
+) -> Result<Vec<Entry>> {
+    let mut entries = vec![];
+    for line in reader.lines().filter_map(|l| l.ok()) {
+        match format {
+            Format::DMenu => entries.push(Entry::echo(line.trim(), None)),
+            Format::Json => {
+                let msg: Message = serde_json::from_str(&line)?;
+                match msg {
+                    Message::Stop => break,
+                    Message::Entry(entry) => entries.push(entry),
+                    Message::Options(options) => config
+                        .update(&options)
+                        .map_err(|s| RMenuError::InvalidKeybind(s))?,
+                }
+            }
+        }
+    }
+    Ok(entries)
+}
+
+#[derive(Default)]
+pub struct ServerBuilder {
+    order: Vec<String>,
+    sources: HashMap<String, Source>,
+}
+
+impl ServerBuilder {
+    pub fn add_input(mut self, format: Format, input: &str) -> Result<Self> {
+        let input = if input == "-" { "/dev/stdin" } else { input };
+        let input = shellexpand::tilde(input).to_string();
+        let path = PathBuf::from(&input);
+        let name = path
+            .file_name()
+            .map(|s| s.to_string_lossy().to_string())
+            .unwrap_or("unknown".to_string());
+
+        let input = Input::new(format, path)?;
+        self.order.push(name.to_owned());
+        self.sources.insert(name, Source::Input(input));
+        Ok(self)
+    }
+
+    pub fn add_plugin(mut self, name: String, config: &mut Config) -> Result<Self> {
+        let cfg = config
+            .plugins
+            .get(&name)
+            .cloned()
+            .ok_or_else(|| RMenuError::NoSuchPlugin(name.to_owned()))?;
+        if let Some(options) = cfg.options.as_ref() {
+            config
+                .update(options)
+                .map_err(|e| RMenuError::InvalidKeybind(e))?;
+        }
+        let plugin = Plugin::new(name.to_owned(), &cfg)?;
+        self.order.push(name.to_owned());
+        self.sources.insert(name.to_owned(), Source::Plugin(plugin));
+        Ok(self)
+    }
+
+    pub fn add_plugins(mut self, names: Vec<String>, config: &mut Config) -> Result<Self> {
+        for name in names {
+            self = self.add_plugin(name, config)?;
+        }
+        Ok(self)
+    }
+
+    pub fn build(self, mut show: Vec<String>) -> Result<Server> {
+        for name in show.iter() {
+            if !self.sources.contains_key(name) {
+                return Err(RMenuError::InvalidPlugin(name.to_owned()));
+            }
+        }
+        if show.is_empty() {
+            let mode = self.order.get(0).expect("no active plugins").clone();
+            log::warn!("no mode specified. defaulting to {mode:?}");
+            show.push(mode);
+        }
+        return Ok(Server {
+            order: self.order,
+            sources: self.sources,
+            active: show,
+        });
+    }
+}
+
+pub struct Server {
+    order: Vec<String>,
+    active: Vec<String>,
+    sources: HashMap<String, Source>,
+}
+
+impl Server {
+    pub fn search(&mut self, config: &mut Config, query: &str) -> Result<Vec<Entry>> {
+        let mut results = vec![];
+        for name in self.active.iter() {
+            let plugin = self.sources.get_mut(name).expect("plugin missing");
+            let entries = plugin.search(config, query)?;
+            results.extend(entries);
+        }
+        Ok(results)
+    }
+
+    pub fn placeholder(&self, config: &Config) -> String {
+        let mode = self.active.last().expect("no active plugins");
+        let plugin = config
+            .plugins
+            .get(mode)
+            .map(|c| c.placeholder.clone())
+            .unwrap_or_default();
+        config
+            .search
+            .placeholder
+            .clone()
+            .or(plugin)
+            .unwrap_or_default()
+    }
+
+    fn mode_index(&self) -> usize {
+        let mode = self.active.last().expect("no active plugins");
+        self.order
+            .iter()
+            .position(|m| m == mode)
+            .expect("invalid mode")
+    }
+
+    pub fn next_plugin(&mut self) {
+        let index = self.mode_index();
+        let mode = match index == self.order.len() - 1 {
+            true => self.order.first().expect("no plugins avaialble"),
+            false => self.order.get(index + 1).expect("cannot find next plugin"),
+        };
+        log::info!("switching to next mode: {mode:?}");
+        self.active = vec![mode.to_owned()];
+    }
+
+    pub fn prev_plugin(&mut self) {
+        let index = self.mode_index();
+        let mode = match index == 0 {
+            true => self.order.last().expect("no plugins avaialble"),
+            false => self.order.get(index - 1).expect("cannot find prev plugin"),
+        };
+        log::info!("switching to prev mode: {mode:?}");
+        self.active = vec![mode.to_owned()];
+    }
+
+    pub fn cleanup(&mut self) {
+        let mut threads = vec![];
+        for source in self.sources.values_mut() {
+            if let Source::Plugin(plugin) = source {
+                if let Some(thread) = plugin.cache_thread.take() {
+                    threads.push(thread);
+                }
+            }
+        }
+        log::debug!("cleaning up {} threads", threads.len());
+        while !threads.is_empty() {
+            let thread = threads.pop().unwrap();
+            let _ = thread.join();
+        }
+    }
+}
+
+enum Source {
+    Input(Input),
+    Plugin(Plugin),
+}
+
+impl Source {
+    pub fn search(&mut self, config: &mut Config, query: &str) -> Result<Vec<Entry>> {
+        match self {
+            Self::Input(input) => input.search(config, query),
+            Self::Plugin(plugin) => plugin.search(config, query),
+        }
+    }
+}
+
+struct Input {
+    input: PathBuf,
+    format: Format,
+    results: Option<Vec<Entry>>,
+}
+
+impl Input {
+    pub fn new(format: Format, input: PathBuf) -> Result<Self> {
+        Ok(Self {
+            input,
+            format,
+            results: None,
+        })
+    }
+
+    pub fn search(&mut self, config: &mut Config, query: &str) -> Result<Vec<Entry>> {
+        let search = new_search(query, &config);
+        let entries = match self.results.as_ref() {
+            Some(results) => results.clone(),
+            None => {
+                log::info!("reading from: {:?}", self.input);
+                let path = File::open(&self.input)?;
+                let reader = BufReader::new(&path);
+                let entries = read_entries(&self.format, config, reader)?;
+                self.results = Some(entries.clone());
+                entries
+            }
+        };
+        let filter = new_searchfn(&search);
+        Ok(entries.into_iter().filter(|e| filter(e)).collect())
+    }
+}
+
+struct Plugin {
     name: String,
     args: Vec<String>,
     format: Format,
@@ -55,7 +278,7 @@ pub struct Plugin {
 }
 
 impl Plugin {
-    pub fn start(name: String, config: &PluginConfig) -> Result<Self> {
+    pub fn new(name: String, config: &PluginConfig) -> Result<Self> {
         let args: Vec<String> = config
             .exec
             .iter()
@@ -77,23 +300,8 @@ impl Plugin {
             .stdout
             .as_mut()
             .ok_or_else(|| RMenuError::CommandError(None))?;
-        let mut entries = vec![];
         let reader = BufReader::new(stdout);
-        for line in reader.lines().filter_map(|l| l.ok()) {
-            match &self.format {
-                Format::DMenu => entries.push(Entry::echo(line.trim(), None)),
-                Format::Json => {
-                    let msg: Message = serde_json::from_str(&line)?;
-                    match msg {
-                        Message::Stop => break,
-                        Message::Entry(entry) => entries.push(entry),
-                        Message::Options(options) => config
-                            .update(&options)
-                            .map_err(|s| RMenuError::InvalidKeybind(s))?,
-                    }
-                }
-            }
-        }
+        let entries = read_entries(&self.format, config, reader)?;
         self.results = Some(entries);
         Ok(())
     }
@@ -123,11 +331,7 @@ impl Plugin {
     }
 
     pub fn search(&mut self, config: &mut Config, query: &str) -> Result<Vec<Entry>> {
-        let search = Search {
-            search: query.to_owned(),
-            is_regex: config.search.use_regex,
-            ignore_case: config.search.ignore_case,
-        };
+        let search = new_search(query, &config);
         match self.command {
             Cmd::Started(_) => {}
             Cmd::Skipped => return self.memory_search(&search),
@@ -198,104 +402,5 @@ impl Plugin {
             .as_ref()
             .expect("results should be set")
             .clone())
-    }
-}
-
-pub struct Server {
-    order: Vec<String>,
-    active: Vec<String>,
-    plugins: HashMap<String, Plugin>,
-}
-
-impl Server {
-    pub fn start(config: &mut Config, run: Vec<String>, mut active: Vec<String>) -> Result<Self> {
-        let mut plugins = HashMap::new();
-        if active.is_empty() {
-            let mode = run.get(0).expect("no active plugins").clone();
-            log::warn!("no mode specified. defaulting to {mode:?}");
-            active.push(mode);
-        }
-        for name in run.iter() {
-            let cfg = config
-                .plugins
-                .get(name)
-                .cloned()
-                .ok_or_else(|| RMenuError::NoSuchPlugin(name.to_owned()))?;
-            if let Some(options) = cfg.options.as_ref() {
-                config
-                    .update(options)
-                    .map_err(|e| RMenuError::InvalidKeybind(e))?;
-            }
-            let plugin = Plugin::start(name.to_owned(), &cfg)?;
-            plugins.insert(name.to_owned(), plugin);
-        }
-        Ok(Self {
-            active,
-            plugins,
-            order: run,
-        })
-    }
-
-    pub fn search(&mut self, config: &mut Config, query: &str) -> Result<Vec<Entry>> {
-        let mut results = vec![];
-        for name in self.active.iter() {
-            let plugin = self.plugins.get_mut(name).expect("plugin missing");
-            let entries = plugin.search(config, query)?;
-            results.extend(entries);
-        }
-        Ok(results)
-    }
-
-    pub fn placeholder(&self, config: &Config) -> String {
-        let mode = self.active.last().expect("no active plugins");
-        let plugin = config.plugins.get(mode).expect("invalid plugin");
-        config
-            .search
-            .placeholder
-            .clone()
-            .or(plugin.placeholder.clone())
-            .unwrap_or_default()
-    }
-
-    fn mode_index(&self) -> usize {
-        let mode = self.active.last().expect("no active plugins");
-        self.order
-            .iter()
-            .position(|m| m == mode)
-            .expect("invalid mode")
-    }
-
-    pub fn next_plugin(&mut self) {
-        let index = self.mode_index();
-        let mode = match index == self.order.len() - 1 {
-            true => self.order.first().expect("no plugins avaialble"),
-            false => self.order.get(index + 1).expect("cannot find next plugin"),
-        };
-        log::info!("switching to next mode: {mode:?}");
-        self.active = vec![mode.to_owned()];
-    }
-
-    pub fn prev_plugin(&mut self) {
-        let index = self.mode_index();
-        let mode = match index == 0 {
-            true => self.order.last().expect("no plugins avaialble"),
-            false => self.order.get(index - 1).expect("cannot find prev plugin"),
-        };
-        log::info!("switching to prev mode: {mode:?}");
-        self.active = vec![mode.to_owned()];
-    }
-
-    pub fn cleanup(&mut self) {
-        let mut threads = vec![];
-        for plugin in self.plugins.values_mut() {
-            if let Some(thread) = plugin.cache_thread.take() {
-                threads.push(thread);
-            }
-        }
-        log::debug!("cleaning up {} threads", threads.len());
-        while !threads.is_empty() {
-            let thread = threads.pop().unwrap();
-            let _ = thread.join();
-        }
     }
 }

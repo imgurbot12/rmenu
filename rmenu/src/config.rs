@@ -242,7 +242,7 @@ pub struct PluginConfig {
 }
 
 /// Allowed Formats for Entry Ingestion
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum Format {
     #[default]
     Json,

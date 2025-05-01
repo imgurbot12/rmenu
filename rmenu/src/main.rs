@@ -7,7 +7,7 @@ mod search;
 mod server;
 
 use clap::Parser;
-use server::Server;
+use server::ServerBuilder;
 
 static DEFAULT_THEME: &'static str = "style.css";
 static DEFAULT_CONFIG: &'static str = "config.yaml";
@@ -30,7 +30,15 @@ fn main() -> server::Result<()> {
     let mut config = cli.get_config()?;
 
     // spawn plugin server
-    let server = Server::start(&mut config, cli.run.clone(), cli.show.clone())?;
+    let mut builder = ServerBuilder::default();
+    if let Some(input) = cli.input.as_ref() {
+        builder = builder.add_input(cli.format, input)?;
+    }
+    if cli.input.is_none() && cli.run.is_empty() {
+        builder = builder.add_input(cli.format, "-")?;
+    }
+    builder = builder.add_plugins(cli.run.clone(), &mut config)?;
+    let server = builder.build(cli.show.clone())?;
 
     // update config based on cli-settings and entries
     config = cli.update_config(config);
@@ -39,7 +47,6 @@ fn main() -> server::Result<()> {
     cli.load_env(&mut config)?;
 
     // configure css theme and css overrides
-    let css = cli.get_css(&config);
     let theme = cli.get_theme();
 
     // set environment variables before running app
@@ -48,7 +55,7 @@ fn main() -> server::Result<()> {
     // run gui
     log::debug!("launching gui");
     let context = gui::ContextBuilder::default()
-        .with_css(css)
+        .with_css(cli.css)
         .with_theme(theme)
         .with_config(config)
         .build(server);

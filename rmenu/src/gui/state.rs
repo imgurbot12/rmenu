@@ -1,3 +1,5 @@
+use std::fs::read_to_string;
+
 use dioxus::html::geometry::euclid::Point2D;
 use dioxus::prelude::*;
 use rmenu_plugin::Entry;
@@ -8,17 +10,17 @@ use crate::server::Server;
 /// Builder Object for Constructing Context
 #[derive(Debug, Default)]
 pub struct ContextBuilder {
-    css: String,
-    theme: String,
+    css: Option<String>,
+    theme: Option<String>,
     config: Option<Config>,
 }
 
 impl ContextBuilder {
-    pub fn with_css(mut self, css: String) -> Self {
+    pub fn with_css(mut self, css: Option<String>) -> Self {
         self.css = css;
         self
     }
-    pub fn with_theme(mut self, theme: String) -> Self {
+    pub fn with_theme(mut self, theme: Option<String>) -> Self {
         self.theme = theme;
         self
     }
@@ -29,10 +31,38 @@ impl ContextBuilder {
     pub fn build(self, mut server: Server) -> Context {
         let mut cfg = self.config.unwrap_or_default();
         let entries = server.search(&mut cfg, "").expect("initial search failed");
+
+        let home = shellexpand::tilde("~/").to_string();
+        let css = self
+            .css
+            .or(cfg.css.clone())
+            .map(|f| shellexpand::tilde(&f).to_string())
+            .map(read_to_string)
+            .map(|f| {
+                let css = f.unwrap_or_else(|err| {
+                    log::error!("Failed to load CSS: {err:?}");
+                    String::new()
+                });
+                css.replace("~/", &home)
+            })
+            .unwrap_or_default();
+        let theme = self
+            .theme
+            .clone()
+            .map(|f| shellexpand::tilde(&f).to_string())
+            .map(read_to_string)
+            .map(|f| {
+                let css = f.unwrap_or_else(|err| {
+                    log::error!("Failed to load Theme: {err:?}");
+                    String::new()
+                });
+                css.replace("~/", &home)
+            })
+            .unwrap_or_default();
         Context {
             quit: false,
-            css: self.css,
-            theme: self.theme,
+            css,
+            theme,
             placeholder: cfg.search.placeholder.clone().unwrap_or_default(),
             use_icons: cfg.use_icons,
             use_comments: cfg.use_comments,

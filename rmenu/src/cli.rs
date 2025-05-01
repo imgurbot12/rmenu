@@ -1,38 +1,11 @@
 ///! CLI Argument Based Configuration and Application Setup
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::{fmt::Display, fs::read_to_string};
+use std::fs::read_to_string;
 
 use clap::Parser;
 
-use crate::config::{cfg_replace, Config, Keybind};
+use crate::config::{cfg_replace, Config, Format, Keybind};
 use crate::server::{RMenuError, Result};
 use crate::{DEFAULT_CONFIG, DEFAULT_THEME, ENV_ACTIVE_PLUGINS, XDG_PREFIX};
-
-/// Allowed Formats for Entry Ingestion
-#[derive(Debug, Clone)]
-pub enum Format {
-    Json,
-    DMenu,
-}
-
-impl Display for Format {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("{self:?}").to_lowercase())
-    }
-}
-
-impl FromStr for Format {
-    type Err = String;
-
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        match s.to_ascii_lowercase().as_str() {
-            "json" => Ok(Format::Json),
-            "dmenu" => Ok(Format::DMenu),
-            _ => Err("No Such Format".to_owned()),
-        }
-    }
-}
 
 /// Dynamic Applicaiton-Menu Tool (Built with Rust)
 #[derive(Parser, Debug)]
@@ -42,10 +15,10 @@ pub struct Args {
     // simple configuration arguments
     /// Filepath for entry input
     #[arg(short, long)]
-    input: Option<String>,
+    pub input: Option<String>,
     /// Format to accept entries
     #[arg(short, long, default_value_t=Format::Json)]
-    format: Format,
+    pub format: Format,
     /// Plugins to run
     #[arg(short, long)]
     pub run: Vec<String>,
@@ -54,13 +27,13 @@ pub struct Args {
     pub show: Vec<String>,
     /// Override default configuration path
     #[arg(short, long, env = "RMENU_CONFIG")]
-    config: Option<PathBuf>,
+    config: Option<String>,
     /// Override base css theme styling
     #[arg(long, env = "RMENU_THEME")]
-    theme: Option<PathBuf>,
+    theme: Option<String>,
     /// Include additional css settings
     #[arg(long, env = "RMENU_CSS")]
-    css: Option<PathBuf>,
+    pub css: Option<String>,
 
     // root config settings
     /// Override terminal command
@@ -169,18 +142,13 @@ pub struct Args {
 
 impl Args {
     /// Find a specifically named file across xdg config paths
-    fn find_xdg_file(&self, name: &str, base: &Option<PathBuf>) -> Option<String> {
-        return base
-            .clone()
-            .or_else(|| {
-                xdg::BaseDirectories::with_prefix(XDG_PREFIX)
-                    .expect("Failed to read xdg base dirs")
-                    .find_config_file(name)
-            })
-            .map(|f| {
-                let f = f.to_string_lossy().to_string();
-                shellexpand::tilde(&f).to_string()
-            });
+    fn find_xdg_file(&self, name: &str, base: &Option<String>) -> Option<String> {
+        return base.clone().or_else(|| {
+            xdg::BaseDirectories::with_prefix(XDG_PREFIX)
+                .expect("Failed to read xdg base dirs")
+                .find_config_file(name)
+                .map(|f| f.to_string_lossy().to_string())
+        });
     }
 
     /// Load Configuration File
@@ -242,54 +210,9 @@ impl Args {
     }
 
     /// Load CSS Theme or Default
-    pub fn get_theme(&self) -> String {
-        let home = shellexpand::tilde("~/").to_string();
+    pub fn get_theme(&self) -> Option<String> {
         self.find_xdg_file(DEFAULT_THEME, &self.theme)
-            .map(read_to_string)
-            .map(|f| {
-                let css = f.unwrap_or_else(|err| {
-                    log::error!("Failed to load Theme: {err:?}");
-                    String::new()
-                });
-                css.replace("~/", &home)
-            })
-            .unwrap_or_else(String::new)
     }
-
-    /// Load Additional CSS or Default
-    pub fn get_css(&self, c: &Config) -> String {
-        let home = shellexpand::tilde("~/").to_string();
-        self.css
-            .clone()
-            .map(|s| s.to_string_lossy().to_string())
-            .or(c.css.clone())
-            .map(|f| {
-                let path = shellexpand::tilde(&f).to_string();
-                read_to_string(&path)
-            })
-            .map(|f| {
-                let css = f.unwrap_or_else(|err| {
-                    log::error!("Failed to load CSS: {err:?}");
-                    String::new()
-                });
-                css.replace("~/", &home)
-            })
-            .unwrap_or_else(String::new)
-    }
-
-    // /// Read Entries from a Configured Input
-    // fn load_input(&mut self, input: &str, config: &mut Config) -> Result<Vec<Entry>> {
-    //     // retrieve input file
-    //     let input = if input == "-" { "/dev/stdin" } else { input };
-    //     let fpath = shellexpand::tilde(input).to_string();
-    //     // read entries into iterator and collect
-    //     log::info!("reading from: {fpath:?}");
-    //     let file = File::open(fpath)?;
-    //     let reader = BufReader::new(file);
-    //     let mut entries = vec![];
-    //     self.read_entries(reader, &mut entries, config)?;
-    //     Ok(entries)
-    // }
 
     /// Configure Environment Variables for Multi-Stage Execution
     pub fn set_env(&self) {
