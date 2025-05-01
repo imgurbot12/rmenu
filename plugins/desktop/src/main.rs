@@ -9,6 +9,7 @@ use regex::Regex;
 use rmenu_plugin::{Action, Entry, Method};
 
 mod icons;
+mod image;
 
 static XDG_HOME_ENV: &'static str = "XDG_DATA_HOME";
 static XDG_DATA_ENV: &'static str = "XDG_DATA_DIRS";
@@ -160,6 +161,35 @@ fn main() {
         })
         .collect();
 
+    // convert desktop icon svgs to pngs
+    let images = image::make_temp();
+    let mut svgs: Vec<(&mut Entry, String, PathBuf)> = desktops
+        .iter_mut()
+        .filter(|e| {
+            e.icon
+                .as_ref()
+                .map(|i| i.ends_with(".svg"))
+                .unwrap_or_default()
+        })
+        .filter_map(|e| {
+            let icon = e.icon.clone().expect("icon missing");
+            let path = image::svg_path(&images, &icon)?;
+            match path.exists() {
+                true => None,
+                false => Some((e, icon, path)),
+            }
+        })
+        .collect();
+
+    if !svgs.is_empty() {
+        let opt = image::svg_options();
+        svgs.par_iter_mut().for_each(|(entry, svg, png)| {
+            image::convert_svg(svg, png, &opt);
+            entry.icon = png.to_str().map(|s| s.to_owned());
+        });
+    }
+
+    // sort entries and display
     desktops.par_sort_by_cached_key(|e| e.name.to_owned());
     let _: Vec<()> = desktops
         .into_iter()

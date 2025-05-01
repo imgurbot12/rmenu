@@ -8,8 +8,15 @@ use cached::proc_macro::cached;
 use once_cell::sync::Lazy;
 use thiserror::Error;
 
+use crate::XDG_PREFIX;
+
 static TEMP_EXISTS: Lazy<Mutex<Vec<bool>>> = Lazy::new(|| Mutex::new(vec![]));
-static TEMP_DIR: Lazy<PathBuf> = Lazy::new(|| PathBuf::from("/tmp/rmenu"));
+static TEMP_DIR: Lazy<PathBuf> = Lazy::new(|| {
+    xdg::BaseDirectories::with_prefix(XDG_PREFIX)
+        .expect("Failed to read xdg base dirs")
+        .create_cache_directory("images")
+        .expect("Failed to write xdg cache dirs")
+});
 
 #[derive(Debug, Error)]
 enum SvgError {

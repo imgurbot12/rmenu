@@ -1082,17 +1082,22 @@ name = "desktop"
 version = "0.0.3"
 dependencies = [
  "clap",
+ "env_logger",
  "freedesktop-desktop-entry",
  "itertools",
+ "log",
  "once_cell",
+ "png",
  "rayon",
  "regex",
+ "resvg",
  "rmenu-plugin",
  "rust-ini",
  "serde_json",
  "shellexpand",
  "thiserror 2.0.12",
  "walkdir",
+ "xdg",
 ]
 
 [[package]]
