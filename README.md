@@ -32,7 +32,6 @@ sudo nix-channel --update
 sudo nix-env -iA unstable.rmenu
 ```
 
-
 ##### Other Platforms:
 
 Install Dependencies (Ubuntu)
@@ -64,17 +63,19 @@ RMenu Comes with a few default plugins.
 |    run    | Execute a program in $PATH                              |
 |   drun    | Run a Configured Free-Desktop Application               |
 |   audio   | Select and Set-Default PulseAudio Sink using `pactl`    |
+|   emoji   | Emoji picker                                            |
+|   files   | Search your filesystem for matching file names          |
 |  network  | Wi-Fi Login/Connection Tool using Network-Manager       |
-|  window   | Simple Window Switcher (Supports Sway/Hyprland)         |
 | powermenu | Simple Power/Logout Tool (Supports Sway/Hyprland)       |
-|   emoji   | Emoji Picker                                            |
+|  search   | [Bang](https://duckduckgo.com/bangs) powered search / Human calculator tool      |
+|  window   | Simple Window Switcher (Supports Sway/Hyprland)         |
 
 Run a plugin by passing the `-r` flag like one of the following:
 
 ```bash
 $ rmenu -r run
 $ rmenu -r drun
-$ rmenu -r audio
+$ rmenu -r search
 ```
 
 Or even run plugins in combination if you'd like:
@@ -145,6 +146,10 @@ $ rmenu-build --help
 #### Applet
 
 ![applet](./screenshots/applet.png)
+
+#### Search
+
+![search](./screenshots/search.png)
 
 #### Nord
 

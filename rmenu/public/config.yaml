@@ -48,6 +48,11 @@ plugins:
   search:
     exec: ["~/.config/rmenu/plugins/rmenu-search"]
     cache: false
+    placeholder: "Search"
+    options:
+      css: ~/.config/rmenu/themes/floating.css
+      window_width:  800
+      window_height: 70
   emoji:
     exec:  ["~/.config/rmenu/plugins/rmenu-emoji"]
     cache: false

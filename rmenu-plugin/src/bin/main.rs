@@ -257,6 +257,8 @@ enum Command {
     Action(ActionArgs),
     /// Generate RMenu Options Settings
     Options(OptionArgs),
+    /// Generate RMenu Stop Message
+    Stop,
 }
 
 #[derive(Debug, Parser)]
@@ -282,6 +284,10 @@ fn main() {
         Command::Options(args) => {
             let options: Options = args.into();
             serde_json::to_string(&options)
+        }
+        Command::Stop => {
+            let stop = Message::Stop;
+            serde_json::to_string(&stop)
         }
     };
     println!("{}", result.expect("Serialization Failed"));

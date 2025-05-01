@@ -1,0 +1,71 @@
+
+body {
+  padding: 0;
+}
+
+body > div {
+  width: 100%;
+  height: auto !important;
+}
+
+.body {
+  margin: 1rem;
+}
+
+.content {
+  display: flex;
+  flex-direction: row;
+  width: -webkit-fill-availkable;
+}
+
+.navbar {
+  flex: auto;
+  position: relative;
+}
+
+.navbar::after {
+  visibility: hidden;
+}
+
+.navbar input {
+  font-size: 1.2rem;
+
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.results {
+  font-size: 1.5rem;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow-y: initial;
+  height: auto !important;
+  min-height: auto !important;
+  white-space: nowrap;
+}
+
+.result-entry {
+  flex: auto;
+}
+
+.result-entry:not(:first-child) {
+  display: none;
+}
+
+.result-entry:nth-child(odd) {
+  background-color: inherit;
+}
+
+.selected {
+  background-color: inherit;
+}
+
+.result {
+  height: 100%;
+}
+
+.context-menu {
+  visibility: hidden;
+}

@@ -45,6 +45,12 @@ impl Cmd {
             _ => panic!("child not started"),
         }
     }
+    pub fn kill(&mut self) -> std::result::Result<(), std::io::Error> {
+        if let Self::Started(child) = self {
+            child.kill()?
+        }
+        Ok(())
+    }
 }
 
 fn new_search(query: &str, config: &Config) -> Search {
@@ -210,6 +216,9 @@ impl Server {
             if let Source::Plugin(plugin) = source {
                 if let Some(thread) = plugin.cache_thread.take() {
                     threads.push(thread);
+                }
+                if let Err(err) = plugin.command.kill() {
+                    log::warn!("failed to kill {:?} {:?}", plugin.name, err);
                 }
             }
         }

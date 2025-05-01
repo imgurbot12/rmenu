@@ -56,8 +56,9 @@ fn main() {
         if let Ok(result) = fend_core::evaluate(&search.search, &mut fend) {
             let calc = result.get_main_result();
             if !calc.is_empty() {
+                let name = format!(" = {calc}");
                 let action = format!("wl-copy {calc:?}");
-                let entry = Entry::new(&calc, &action, None);
+                let entry = Entry::new(&name, &action, None);
                 send_entry(&entry);
             }
         }
@@ -68,7 +69,7 @@ fn main() {
             Some(bang) => bang,
             None => {
                 log::warn!("invalid bang: {search_bang:?}");
-                bangs.get(DEFAULT_BANG).expect("default bang missing")
+                bangs.get(&DEFAULT_BANG[1..]).expect("default bang missing")
             }
         };
 
