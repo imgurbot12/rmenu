@@ -226,7 +226,7 @@ impl Context {
 
     //NOTE: using with_mut to trigger rendering update
     pub fn execute(&mut self, index: usize, pos: &mut Pos) {
-        let Some(entry) = self.entries.get(index) else {
+        let Some(entry) = self.entries.get(index).cloned() else {
             log::error!("execute => invalid index {index:?}");
             return;
         };
@@ -237,6 +237,7 @@ impl Context {
         };
         log::debug!("execute-entry {entry:?}");
         log::debug!("execute-action: {action:?}");
+        self.cleanup(); // ensure everything is cleaned up before exec
         crate::exec::execute(action, self.config.terminal.clone());
         self.quit = true;
     }
