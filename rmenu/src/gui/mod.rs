@@ -102,6 +102,14 @@ fn gui_main() -> Element {
         });
     }
 
+    // prevent cursor from jumping within input on arrow up/down
+    let disable_arrows = |e: KeyboardEvent| {
+        let code = e.code();
+        if code == Code::ArrowUp || code == Code::ArrowDown {
+            e.prevent_default();
+        }
+    };
+
     let pattern = context.config.search.restrict.clone();
     let maxlength = context.config.search.max_length as i64;
     let max_result = context.calc_limit(&position);
@@ -130,6 +138,7 @@ fn gui_main() -> Element {
                         maxlength: maxlength,
                         placeholder: "{context.placeholder}",
                         oninput: move |e| search.set(e.value()),
+                        onkeydown: disable_arrows,
                     }
                 }
                 div {
