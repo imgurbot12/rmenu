@@ -1,4 +1,8 @@
 
+.navbar input {
+  text-align: center;
+}
+
 .results {
   display: flex;
   flex-wrap: wrap;

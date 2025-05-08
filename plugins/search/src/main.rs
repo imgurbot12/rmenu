@@ -1,7 +1,9 @@
 mod bang;
+mod pattern;
 
 use std::io::{BufRead, BufReader, Read};
 
+use pattern::Patterns;
 use rmenu_plugin::{Entry, Message, Search};
 
 use crate::bang::Bang;
@@ -38,8 +40,14 @@ fn main() {
         .build()
         .expect("bang regex failed");
 
+    // configure fend
     let mut fend = fend_core::Context::new();
+    fend.set_random_u32_fn(|| rand::random());
 
+    // configure additiona patterns
+    let patterns = Patterns::new();
+
+    // prepare stdin reader
     let stdin = std::io::stdin();
     let mut reader = BufReader::new(stdin);
 
@@ -76,6 +84,13 @@ fn main() {
         // remove bang from search string
         let query = search.search.replace(search_bang, "");
         let query = query.trim();
+
+        // attempt to match available patterns
+        if let Some(entries) = patterns.try_match(query, Some(bang)) {
+            for entry in entries.iter() {
+                send_entry(&entry);
+            }
+        }
 
         let name = format!("{} - {query}", bang.name);
 

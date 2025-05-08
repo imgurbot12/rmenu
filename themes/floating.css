@@ -50,7 +50,7 @@ body > div {
   flex: auto;
 }
 
-.result-entry:not(:first-child) {
+.result-entry:not(:has(.selected)) {
   display: none;
 }
 
