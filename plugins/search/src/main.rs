@@ -93,8 +93,9 @@ fn main() {
         }
 
         let name = format!("{} - {query}", bang.name);
+        let escaped = url_escape::encode_component(query).to_string();
 
-        let action = format!("xdg-open {:?}", bang.url.replace(r"{{{s}}}", query));
+        let action = format!("xdg-open {:?}", bang.url.replace(r"{{{s}}}", &escaped));
         let entry = Entry::new(&name, &action, None);
         send_entry(&entry);
 
