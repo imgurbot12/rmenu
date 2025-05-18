@@ -1,11 +1,20 @@
 //! Execution Implementation for Entry Actions
 use std::process::Command;
-use std::{collections::HashMap, os::unix::process::CommandExt};
+use std::{collections::HashMap, process::Stdio};
+
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
+#[cfg(not(target_os = "windows"))]
+use std::os::unix::process::CommandExt;
 
 use rmenu_plugin::{Action, Method};
 use shell_words::split;
 use strfmt::strfmt;
 use which::which;
+
+const DETACHED_PROCESS: u32 = 8u32;
+const CREATE_NEW_PROCESS_GROUP: u32 = 512u32;
 
 /// Find Best Terminal To Execute
 fn find_terminal() -> String {
@@ -58,6 +67,23 @@ pub fn execute(action: &Action, term: Option<String>) {
             return;
         }
     };
-    let err = Command::new(&args[0]).args(&args[1..]).exec();
-    panic!("Command Error: {err:?}");
+
+    #[cfg(target_os = "windows")]
+    {
+        let child = Command::new(&args[0])
+            .creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+            .args(&args[1..])
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn();
+        if let Err(err) = child {
+            panic!("Command Error: {err:?}");
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let err = Command::new(&args[0]).args(&args[1..]).exec();
+        panic!("Command Error: {err:?}");
+    }
 }

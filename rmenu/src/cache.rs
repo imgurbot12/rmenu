@@ -23,6 +23,16 @@ pub enum CacheError {
     EncodingError(#[from] serde_json::Error),
 }
 
+#[cfg(target_os = "windows")]
+#[inline]
+fn cache_file(name: &str) -> PathBuf {
+    let mut cache = dirs::cache_dir().expect("failed to find windows cache dir");
+    cache.push(&format!(".{}", XDG_PREFIX));
+    cache.push(name);
+    cache
+}
+
+#[cfg(not(target_os = "windows"))]
 #[inline]
 fn cache_file(name: &str) -> PathBuf {
     xdg::BaseDirectories::with_prefix(XDG_PREFIX)

@@ -142,6 +142,18 @@ pub struct Args {
 
 impl Args {
     /// Find a specifically named file across xdg config paths
+    #[cfg(target_os = "windows")]
+    fn find_xdg_file(&self, name: &str, base: &Option<String>) -> Option<String> {
+        return base.clone().or_else(|| {
+            let mut cfg = dirs::home_dir().expect("failed to find windows home directory");
+            cfg.push(&format!(".{}", XDG_PREFIX));
+            cfg.push(name);
+            Some(cfg.to_string_lossy().to_string())
+        });
+    }
+
+    /// Find a specifically named file across xdg config paths
+    #[cfg(not(target_os = "windows"))]
     fn find_xdg_file(&self, name: &str, base: &Option<String>) -> Option<String> {
         return base.clone().or_else(|| {
             xdg::BaseDirectories::with_prefix(XDG_PREFIX)

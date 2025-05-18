@@ -11,6 +11,16 @@ use thiserror::Error;
 use crate::XDG_PREFIX;
 
 static TEMP_EXISTS: Lazy<Mutex<Vec<bool>>> = Lazy::new(|| Mutex::new(vec![]));
+
+#[cfg(target_os = "windows")]
+static TEMP_DIR: Lazy<PathBuf> = Lazy::new(|| {
+    let mut cache = dirs::cache_dir().expect("failed to find windows cache dir");
+    cache.push(&format!(".{}", XDG_PREFIX));
+    cache.push("images");
+    cache
+});
+
+#[cfg(not(target_os = "windows"))]
 static TEMP_DIR: Lazy<PathBuf> = Lazy::new(|| {
     xdg::BaseDirectories::with_prefix(XDG_PREFIX)
         .expect("Failed to read xdg base dirs")
