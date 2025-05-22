@@ -32,10 +32,10 @@ fn main() -> server::Result<()> {
     // spawn plugin server
     let mut builder = ServerBuilder::default();
     if let Some(input) = cli.input.as_ref() {
-        builder = builder.add_input(cli.format, input)?;
+        builder = builder.add_input(cli.format, input, &mut config)?;
     }
     if cli.input.is_none() && cli.run.is_empty() {
-        builder = builder.add_input(cli.format, "-")?;
+        builder = builder.add_input(cli.format, "-", &mut config)?;
     }
     builder = builder.add_plugins(cli.run.clone(), &mut config)?;
     let server = builder.build(cli.show.clone())?;

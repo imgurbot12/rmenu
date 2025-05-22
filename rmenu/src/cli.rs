@@ -143,10 +143,10 @@ pub struct Args {
 impl Args {
     /// Find a specifically named file across xdg config paths
     #[cfg(target_os = "windows")]
-    fn find_xdg_file(&self, name: &str, base: &Option<String>) -> Option<String> {
+    fn find_config(&self, name: &str, base: &Option<String>) -> Option<String> {
         return base.clone().or_else(|| {
-            let mut cfg = dirs::home_dir().expect("failed to find windows home directory");
-            cfg.push(&format!(".{}", XDG_PREFIX));
+            let mut cfg = dirs::config_dir().expect("failed to find windows home directory");
+            cfg.push(XDG_PREFIX);
             cfg.push(name);
             Some(cfg.to_string_lossy().to_string())
         });
@@ -154,7 +154,7 @@ impl Args {
 
     /// Find a specifically named file across xdg config paths
     #[cfg(not(target_os = "windows"))]
-    fn find_xdg_file(&self, name: &str, base: &Option<String>) -> Option<String> {
+    fn find_config(&self, name: &str, base: &Option<String>) -> Option<String> {
         return base.clone().or_else(|| {
             xdg::BaseDirectories::with_prefix(XDG_PREFIX)
                 .expect("Failed to read xdg base dirs")
@@ -165,7 +165,7 @@ impl Args {
 
     /// Load Configuration File
     pub fn get_config(&self) -> Result<Config> {
-        let config = self.find_xdg_file(DEFAULT_CONFIG, &self.config);
+        let config = self.find_config(DEFAULT_CONFIG, &self.config);
         if let Some(path) = config {
             log::debug!("loading config: {path:?}");
             let config: Config = match read_to_string(path) {
@@ -223,7 +223,7 @@ impl Args {
 
     /// Load CSS Theme or Default
     pub fn get_theme(&self) -> Option<String> {
-        self.find_xdg_file(DEFAULT_THEME, &self.theme)
+        self.find_config(DEFAULT_THEME, &self.theme)
     }
 
     /// Configure Environment Variables for Multi-Stage Execution

@@ -8,18 +8,37 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.37", features = ["derive"] }
 env_logger = "0.11.8"
-freedesktop-desktop-entry = "0.7.11"
 itertools = "0.14.0"
 log = "0.4.27"
-once_cell = "1.21.3"
 png = "0.17.16"
 rayon = "1.10.0"
-regex = "1.11.1"
 resvg = "0.45.1"
 rmenu-plugin = { version = "0.0.3", path = "../../rmenu-plugin" }
-rust-ini = "0.21.1"
 serde_json = "1.0.140"
-shellexpand = "3.1.1"
 thiserror = "2.0.12"
 walkdir = "2.5.0"
+
+[target.'cfg(windows)'.dependencies]
+dirs = "6.0.0"
+image = "0.25.6"
+lnk = "0.6.1"
+regex = "1.11.1"
+widestring = "1.2.0"
+windows = { version = "0.52.0", features = [
+    "Win32_Devices_HumanInterfaceDevice",
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_UI_Shell",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging"
+] }
+
+# serde = { version = "1.0.219", features = ["derive"] }
+# winreg = { version = "0.55.0", features = ["serialization-serde"] }
+
+[target.'cfg(unix)'.dependencies]
 xdg = "2.5.2"
+rust-ini = "0.21.1"
+shellexpand = "3.1.1"
+once_cell = "1.21.3"
+freedesktop-desktop-entry = "0.7.11"

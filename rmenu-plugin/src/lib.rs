@@ -1,6 +1,9 @@
 //! RMenu-Plugin Object Implementations
 use serde::{Deserialize, Serialize};
 
+#[cfg(feature = "extra")]
+pub mod extra;
+
 /// Methods allowed to Execute Actions on Selection
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]

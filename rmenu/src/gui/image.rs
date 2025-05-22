@@ -94,5 +94,5 @@ pub fn convert_svg(path: String) -> Option<String> {
 
 #[cached]
 pub fn image_exists(path: String) -> bool {
-    PathBuf::from(path).exists()
+    path.starts_with("http://dioxus.") || PathBuf::from(path).exists()
 }

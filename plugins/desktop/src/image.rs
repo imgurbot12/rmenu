@@ -20,6 +20,20 @@ enum SvgError {
 }
 
 /// Make Temporary Directory for Generated PNGs
+#[cfg(target_os = "windows")]
+#[inline]
+pub fn make_temp() -> PathBuf {
+    let mut cache = dirs::cache_dir().expect("Failed to find windows home dir");
+    cache.push(XDG_PREFIX);
+    cache.push("images");
+    if !cache.exists() {
+        std::fs::create_dir_all(&cache).expect("Failed to make windows cache dirs");
+    }
+    cache
+}
+
+/// Make Temporary Directory for Generated PNGs
+#[cfg(target_family = "unix")]
 #[inline]
 pub fn make_temp() -> PathBuf {
     xdg::BaseDirectories::with_prefix(XDG_PREFIX)

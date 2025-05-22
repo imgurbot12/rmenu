@@ -1,14 +1,40 @@
+use std::io::{BufRead, BufReader, Read};
+
+use anyhow::{Context, Result};
+use clap::{Parser, Subcommand};
+use rmenu_plugin::{Entry, Message, Search};
+
 mod bang;
 mod pattern;
 
-use std::io::{BufRead, BufReader, Read};
-
-use pattern::Patterns;
-use rmenu_plugin::{Entry, Message, Search};
-
 use crate::bang::Bang;
+use crate::pattern::Patterns;
 
-static DEFAULT_BANG: &'static str = "!brave";
+const DEFAULT_BANG: &'static str = "!brave";
+
+#[cfg(target_os = "windows")]
+const CMD_PREFIX: &'static str = "cmd /K ";
+#[cfg(target_family = "unix")]
+const CMD_PREFIX: &'static str = "";
+
+#[cfg(target_os = "windows")]
+const START_COMMAND: &'static str = "start";
+#[cfg(target_family = "unix")]
+const START_COMMAND: &'static str = "xdg-open";
+
+#[derive(Debug, Subcommand)]
+pub enum Commands {
+    Search,
+    Copy { contents: String },
+}
+
+#[derive(Parser)]
+#[command(author, version, about, long_about = None)]
+#[command(propagate_version = true)]
+pub struct Cli {
+    #[clap(subcommand)]
+    command: Option<Commands>,
+}
 
 fn send_entry(entry: &Entry) {
     let message = serde_json::to_string(&entry).expect("invalid entry");
@@ -32,13 +58,25 @@ fn read_search<T: Read>(reader: &mut BufReader<T>) -> Option<Search> {
     serde_json::from_str(&buf).ok()
 }
 
-fn main() {
+fn main() -> Result<()> {
     env_logger::init();
 
+    let cli = Cli::parse();
+    let command = cli.command.unwrap_or(Commands::Search);
+    match command {
+        Commands::Copy { contents } => {
+            rmenu_plugin::extra::clipboard::copy_and_exit(&contents).map_err(anyhow::Error::msg)
+        }
+        Commands::Search => search(),
+    }
+}
+
+fn search() -> Result<()> {
+    let exe = rmenu_plugin::extra::get_exe();
     let bangs = Bang::bangs();
     let rgx = regex::RegexBuilder::new(r"!\w+")
         .build()
-        .expect("bang regex failed");
+        .context("bang regex failed to compile")?;
 
     // configure fend
     let mut fend = fend_core::Context::new();
@@ -65,7 +103,7 @@ fn main() {
             let calc = result.get_main_result();
             if !calc.is_empty() {
                 let name = format!(" = {calc}");
-                let action = format!("wl-copy {calc:?}");
+                let action = format!("{CMD_PREFIX}{exe} copy {calc:?}");
                 let entry = Entry::new(&name, &action, None);
                 send_entry(&entry);
             }
@@ -77,7 +115,9 @@ fn main() {
             Some(bang) => bang,
             None => {
                 log::warn!("invalid bang: {search_bang:?}");
-                bangs.get(&DEFAULT_BANG[1..]).expect("default bang missing")
+                bangs
+                    .get(&DEFAULT_BANG[1..])
+                    .context("default bang missing")?
             }
         };
 
@@ -95,12 +135,13 @@ fn main() {
         let name = format!("{} - {query}", bang.name);
         let escaped = url_escape::encode_component(query).to_string();
 
-        let action = format!("xdg-open {:?}", bang.url.replace(r"{{{s}}}", &escaped));
+        let url = bang.url.replace(r"{{{s}}}", &escaped);
+        let action = format!("{CMD_PREFIX}{START_COMMAND} {url:?}",);
         let entry = Entry::new(&name, &action, None);
         send_entry(&entry);
 
         let stop = Message::Stop;
-        let message = serde_json::to_string(&stop).expect("invalid stop");
+        let message = serde_json::to_string(&stop).context("invalid stop message")?;
         println!("{message}");
     }
 }

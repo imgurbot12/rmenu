@@ -345,7 +345,11 @@ fn gui_entry(mut row: Row) -> Element {
 fn context_menu(ctx_menu: Signal<ContextMenu>, position: Signal<Position>) -> Element {
     let ctx = use_context::<Ctx>();
     let context = ctx.read().expect("failed to read ctx");
-    let index = ctx_menu.with(|c| c.entry.unwrap_or(0));
+    let index = ctx_menu.with(|c| c.entry);
+    if index.is_none() {
+        return rsx! {};
+    }
+    let index = index.unwrap_or(0);
     let entry = context.get_entry(index);
     rsx! {
         div {

@@ -67,17 +67,36 @@ fn read_entries<T: Read>(
     reader: BufReader<T>,
 ) -> Result<Vec<Entry>> {
     let mut entries = vec![];
-    for line in reader.lines().filter_map(|l| l.ok()) {
+    for line in reader
+        .lines()
+        .filter_map(|l| l.ok())
+        .map(|l| l.trim().to_owned())
+        .filter(|l| !l.is_empty())
+    {
         match format {
-            Format::DMenu => entries.push(Entry::echo(line.trim(), None)),
+            Format::DMenu => entries.push(Entry::echo(&line, None)),
             Format::Json => {
                 let msg: Message = serde_json::from_str(&line)?;
                 match msg {
                     Message::Stop => break,
-                    Message::Entry(entry) => entries.push(entry),
                     Message::Options(options) => config
                         .update(&options)
                         .map_err(|s| RMenuError::InvalidKeybind(s))?,
+                    Message::Entry(mut entry) => {
+                        //NOTE: windows paths and paths with predefined
+                        // extensions like file:// or c:// are broken.
+                        // (https://github.com/DioxusLabs/dioxus/issues/1814)
+                        if let Some(icon) = entry.icon.as_ref() {
+                            if icon.starts_with("C:") || icon.starts_with("D:") {
+                                let path: Vec<String> =
+                                    icon[2..].split("\\").map(|c| c.to_string()).collect();
+                                let icon =
+                                    format!("http://dioxus.{}{}", &icon[..2], path.join("/"));
+                                entry.icon = Some(icon)
+                            }
+                        }
+                        entries.push(entry)
+                    }
                 }
             }
         }
@@ -92,8 +111,17 @@ pub struct ServerBuilder {
 }
 
 impl ServerBuilder {
-    pub fn add_input(mut self, format: Format, input: &str) -> Result<Self> {
-        let input = if input == "-" { "/dev/stdin" } else { input };
+    pub fn add_input(mut self, format: Format, input: &str, config: &mut Config) -> Result<Self> {
+        if input == "-" {
+            let stdin = std::io::stdin();
+            let name = "stdin".to_owned();
+
+            let input = Entries::new_file(format, config, stdin)?;
+            self.order.push(name.to_owned());
+            self.sources.insert(name, Source::Results(input));
+            return Ok(self);
+        }
+
         let input = shellexpand::tilde(input).to_string();
         let path = PathBuf::from(&input);
         let name = path
@@ -233,6 +261,7 @@ impl Server {
 enum Source {
     Input(Input),
     Plugin(Plugin),
+    Results(Entries),
 }
 
 impl Source {
@@ -240,7 +269,24 @@ impl Source {
         match self {
             Self::Input(input) => input.search(config, query),
             Self::Plugin(plugin) => plugin.search(config, query),
+            Self::Results(results) => results.search(config, query),
         }
+    }
+}
+
+struct Entries(Vec<Entry>);
+
+impl Entries {
+    pub fn new_file(format: Format, config: &mut Config, mut reader: impl Read) -> Result<Self> {
+        let reader = BufReader::new(&mut reader);
+        let entries = read_entries(&format, config, reader)?;
+        Ok(Self(entries))
+    }
+
+    pub fn search(&mut self, config: &mut Config, query: &str) -> Result<Vec<Entry>> {
+        let search = new_search(query, &config);
+        let filter = new_searchfn(&search);
+        Ok(self.0.clone().into_iter().filter(|e| filter(e)).collect())
     }
 }
 

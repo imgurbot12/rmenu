@@ -1,0 +1,79 @@
+# global config settings
+use_icons: true
+
+# search settings
+search:
+  ignore_case:  true
+  search_regex: false
+
+# window settings
+window:
+  title: "Rmenu - Application Launcher"
+  size:
+    width:  800
+    height: 400
+  position:
+    x: 900
+    y: 600
+  focus:       true
+  decorate:    false
+  transparent: false
+  always_top:  true
+
+# configured plugin settings
+plugins:
+  run:
+    exec:  ["~\\AppData\\Roaming\\rmenu\\plugins\\rmenu-run"]
+    cache: 300
+  drun:
+    exec:  ["~\\AppData\\Roaming\\rmenu\\plugins\\rmenu-desktop"]
+    cache: onlogin
+    options:
+      page_size: 500
+      use_comments: false
+      window_width: 600
+      window_height: 500
+  files:
+    exec:  ["~\\AppData\\Roaming\\rmenu\\plugins\\rmenu-files"]
+    cache: false
+    placeholder: "Search for a file"
+  search:
+    exec:  ["~\\AppData\\Roaming\\rmenu\\plugins\\rmenu-search"]
+    cache: false
+    placeholder: "Search"
+    options:
+      css: ~\AppData\Roaming\rmenu\themes\floating.css
+      window_width:  800
+      window_height: 70
+  emoji:
+    exec:  ["~\\AppData\\Roaming\\rmenu\\plugins\\rmenu-emoji"]
+    cache: false
+    placeholder: "Search an Emoji"
+    options:
+      css: ~/.config/rmenu/plugins/css/emojis.css
+      hover_select: true
+      single_click: true
+      context_menu: true
+      key_move_prev: ["Arrow-Left"]
+      key_move_next: ["Arrow-Right"]
+      key_jump_prev: ["Arrow-Up"]
+      key_jump_next: ["Arrow-Down"]
+  powermenu:
+    exec: ["~/.config/rmenu/plugins/powermenu.sh"]
+    cache: false
+    options:
+      hover_select: true
+      single_click: true
+
+# custom keybindings
+keybinds:
+  exec:       ["Enter"]
+  exit:       ["Escape"]
+  move_next:  ["Arrow-Down", "Tab"]
+  move_prev:  ["Arrow-Up", "Shift+Tab"]
+  jump_next:  ["Page-Down"]
+  jump_prev:  ["Page-Up"]
+  open_menu:  ["Arrow-Right"]
+  close_menu: ["Arrow-Left"]
+  mode_next:  ["Ctrl+Tab"]
+  mode_prev:  ["Ctrl+Shift+Tab"]

@@ -1,7 +1,4 @@
-use std::os::unix::process::CommandExt;
-use std::process::Command;
-
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use clap::{Parser, Subcommand};
 use rmenu_plugin::Entry;
 
@@ -19,38 +16,15 @@ pub struct Cli {
     command: Option<Commands>,
 }
 
-/// Retrieve Avaialble Copy Command from System
-fn get_command() -> Result<Command> {
-    if let Ok(path) = which::which("wl-copy") {
-        Ok(std::process::Command::new(path))
-    } else if let Ok(path) = which::which("xsel") {
-        let mut cmd = std::process::Command::new(path);
-        cmd.arg("-ib");
-        Ok(cmd)
-    } else if let Ok(path) = which::which("xclip") {
-        let mut cmd = std::process::Command::new(path);
-        cmd.arg("-selection");
-        cmd.arg("c");
-        Ok(cmd)
-    } else {
-        Err(anyhow!("no copy command available!"))
-    }
-}
-
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let command = cli.command.unwrap_or(Commands::ListEmoji);
     match command {
         Commands::Copy { emoji } => {
-            let mut command = get_command()?;
-            let _ = command.arg(emoji).exec();
+            rmenu_plugin::extra::clipboard::copy_and_exit(&emoji).map_err(anyhow::Error::msg)?;
         }
         Commands::ListEmoji => {
-            let exe = std::env::current_exe()
-                .expect("failed to discover self")
-                .to_str()
-                .expect("invalid executable")
-                .to_string();
+            let exe = rmenu_plugin::extra::get_exe();
             for emoji in emojis::iter() {
                 let action = format!("{exe} copy '{}'", emoji.as_str());
                 let entry = Entry::new(emoji.as_str(), &action, Some(emoji.name()));
