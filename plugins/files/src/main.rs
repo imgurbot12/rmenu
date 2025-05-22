@@ -1,3 +1,7 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
 use std::io::{BufRead, BufReader};
 use std::num::NonZeroUsize;
 use std::path::Path;
@@ -155,7 +159,7 @@ fn main() -> anyhow::Result<()> {
                     }
                     let path = entry.path();
                     let full = path.canonicalize().unwrap_or(path.to_path_buf());
-                    let action = format!("xdg-open {full:?}");
+                    let action = rmenu_plugin::extra::open_command(full);
                     let comment = format!("{path:?}");
                     let entry = Entry::new(&comment, &action, None);
                     let json = serde_json::to_string(&entry).expect("failed to serialize message");

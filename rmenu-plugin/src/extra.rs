@@ -10,6 +10,18 @@ pub fn get_exe() -> String {
         .to_string()
 }
 
+/// Generate Open Command to Access Resource
+#[cfg(target_os = "windows")]
+pub fn open_command(resource: impl std::fmt::Debug) -> String {
+    format!("cmd /K start {resource:?}")
+}
+
+/// Generate Open Command to Access Resource
+#[cfg(target_family = "unix")]
+pub fn open_command(resource: impl std::fmt::Debug) -> String {
+    format!("xdg-open {resource:?}")
+}
+
 #[cfg(target_os = "windows")]
 pub mod clipboard {
     use clipboard_win::{formats, Clipboard, Setter};

@@ -1,3 +1,7 @@
+#![cfg_attr(
+    all(not(debug_assertions), target_os = "windows"),
+    windows_subsystem = "windows"
+)]
 use std::io::{BufRead, BufReader, Read};
 
 use anyhow::{Context, Result};
@@ -16,11 +20,6 @@ const DEFAULT_BANG: &'static str = "!brave";
 const CMD_PREFIX: &'static str = "cmd /K ";
 #[cfg(target_family = "unix")]
 const CMD_PREFIX: &'static str = "";
-
-#[cfg(target_os = "windows")]
-const START_COMMAND: &'static str = "start";
-#[cfg(target_family = "unix")]
-const START_COMMAND: &'static str = "xdg-open";
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
@@ -136,7 +135,7 @@ fn search() -> Result<()> {
         let escaped = url_escape::encode_component(query).to_string();
 
         let url = bang.url.replace(r"{{{s}}}", &escaped);
-        let action = format!("{CMD_PREFIX}{START_COMMAND} {url:?}",);
+        let action = rmenu_plugin::extra::open_command(&url);
         let entry = Entry::new(&name, &action, None);
         send_entry(&entry);
 

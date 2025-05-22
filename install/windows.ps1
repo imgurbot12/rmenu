@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 #** Variables **#
 
 $CARGO="cargo"
-$CARGO_FLAGS="--release"
+$CARGO_FLAGS="--release "
 
 $CONFIG="$HOME\AppData\Roaming\rmenu"
 
@@ -32,6 +32,7 @@ function Compile-All {
   Invoke-Expression "$CARGO build -p rmenu   $CARGO_FLAGS"
   Invoke-Expression "$CARGO build -p desktop $CARGO_FLAGS"
   Invoke-Expression "$CARGO build -p emoji   $CARGO_FLAGS"
+  Invoke-Expression "$CARGO build -p files   $CARGO_FLAGS"
   Invoke-Expression "$CARGO build -p run     $CARGO_FLAGS"
   Invoke-Expression "$CARGO build -p search  $CARGO_FLAGS"
 }

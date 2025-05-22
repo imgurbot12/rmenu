@@ -49,7 +49,7 @@ impl Pattern for UrlPattern {
     fn is_match(&self, search: &str, _bang: Option<&Bang>) -> Option<Vec<Entry>> {
         if self.rgx.is_match(search) {
             let name = format!("Visit - {search:?}");
-            let action = format!("xdg-open {:?}", format!("http://{search}"));
+            let action = rmenu_plugin::extra::open_command(&format!("http://{search}"));
             let entry = Entry::new(&name, &action, None);
             return Some(vec![entry]);
         }
@@ -79,7 +79,7 @@ impl Pattern for GithubRepoPattern {
                 let repo = matches.get(2).expect("missing repo name");
                 let name = format!("Github Repo - {owner}/{repo}");
                 let search = format!("https://github.com/{owner}/{repo}");
-                let action = format!("xdg-open {search:?}");
+                let action = rmenu_plugin::extra::open_command(&search);
                 let entry = Entry::new(&name, &action, None);
                 Some(vec![entry])
             }

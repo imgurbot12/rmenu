@@ -6,6 +6,7 @@ mod entry;
 mod image;
 mod state;
 
+use dioxus_desktop::DesktopContext;
 pub use state::ContextBuilder;
 use state::{Context, ContextMenu, Position};
 
@@ -14,7 +15,7 @@ const DEFAULT_CSS_CONTENT: &'static str = include_str!("../../public/default.css
 type Ctx = Arc<RwLock<Context>>;
 
 pub fn run(ctx: Context) {
-    let window = dioxus_desktop::WindowBuilder::default()
+    let mut window = dioxus_desktop::WindowBuilder::default()
         .with_title(ctx.config.window.title.clone())
         .with_focused(ctx.config.window.focus)
         .with_decorations(ctx.config.window.decorate)
@@ -23,6 +24,11 @@ pub fn run(ctx: Context) {
         .with_inner_size(ctx.config.window.logical_size())
         .with_fullscreen(ctx.config.window.get_fullscreen())
         .with_theme(ctx.config.window.get_theme());
+    if let Some(pos) = ctx.config.window.logical_pos() {
+        println!("set pos {pos:?}");
+        window = window.with_position(pos);
+    }
+
     let config = dioxus_desktop::Config::default()
         .with_window(window)
         .with_menu(None)
@@ -38,6 +44,30 @@ pub fn run(ctx: Context) {
 fn gui_main() -> Element {
     // build context and signals for state
     let ctx = use_context::<Ctx>();
+
+    // put window on center of screen
+    {
+        let mut ctx = ctx.write().expect("failed to read context");
+        if let Some(pos) = ctx.config.window.position.take() {
+            if let crate::config::WindowPos::Center = pos {
+                let window = dioxus_desktop::window();
+                let monitor = window
+                    .window
+                    .current_monitor()
+                    .expect("failed to find monitor");
+                let wsize = window.outer_size();
+                let msize = monitor.size();
+
+                let x = (msize.width - wsize.width) / 2;
+                let y = (msize.height - wsize.height) / 2;
+                log::info!("centering window at {x}/{y}");
+                let pos = dioxus_desktop::LogicalPosition::new(x, y);
+
+                let desktop = consume_context::<DesktopContext>();
+                desktop.set_outer_position(pos);
+            }
+        }
+    }
 
     let mut search = use_signal(String::new);
     let mut position = use_signal(Position::default);

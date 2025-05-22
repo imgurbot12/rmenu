@@ -141,11 +141,20 @@ impl Default for WindowSize {
     }
 }
 
+#[derive(Debug, PartialEq, Clone, Default, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WindowPos {
+    #[default]
+    Center,
+    Exact(i32, i32),
+}
+
 /// Window Configuration Settings
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct WindowConfig {
     pub title: String,
     pub size: WindowSize,
+    pub position: Option<WindowPos>,
     #[serde(default = "_true")]
     pub focus: bool,
     pub decorate: bool,
@@ -161,6 +170,15 @@ impl WindowConfig {
         dioxus_desktop::LogicalSize {
             width: self.size.width,
             height: self.size.height,
+        }
+    }
+    pub fn logical_pos(&self) -> Option<dioxus_desktop::LogicalPosition<i32>> {
+        let Some(pos) = self.position.clone() else {
+            return None;
+        };
+        match pos {
+            WindowPos::Exact(x, y) => Some(dioxus_desktop::LogicalPosition::new(x, y)),
+            _ => None,
         }
     }
     pub fn get_fullscreen(&self) -> Option<dioxus_desktop::tao::window::Fullscreen> {
@@ -185,6 +203,7 @@ impl Default for WindowConfig {
         Self {
             title: "RMenu - Application Launcher".to_owned(),
             size: Default::default(),
+            position: Default::default(),
             focus: true,
             decorate: false,
             transparent: false,

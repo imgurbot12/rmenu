@@ -12,9 +12,7 @@ window:
   size:
     width:  800
     height: 400
-  position:
-    x: 900
-    y: 600
+  position: center
   focus:       true
   decorate:    false
   transparent: false
