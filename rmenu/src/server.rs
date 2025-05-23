@@ -86,17 +86,9 @@ fn read_entries<T: Read>(
                         .update(&options)
                         .map_err(|s| RMenuError::InvalidKeybind(s))?,
                     Message::Entry(mut entry) => {
-                        //NOTE: windows paths and paths with predefined
-                        // extensions like file:// or c:// are broken.
-                        // (https://github.com/DioxusLabs/dioxus/issues/1814)
                         if let Some(icon) = entry.icon.as_ref() {
-                            if icon.starts_with("C:") || icon.starts_with("D:") {
-                                let path: Vec<String> =
-                                    icon[2..].split("\\").map(|c| c.to_string()).collect();
-                                let icon =
-                                    format!("http://dioxus.{}{}", &icon[..2], path.join("/"));
-                                entry.icon = Some(icon)
-                            }
+                            let icon = crate::config::expand_resource(icon);
+                            entry.icon = Some(icon);
                         }
                         entries.push(entry)
                     }

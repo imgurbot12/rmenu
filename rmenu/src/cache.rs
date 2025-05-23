@@ -27,7 +27,10 @@ pub enum CacheError {
 #[inline]
 fn cache_file(name: &str) -> PathBuf {
     let mut cache = dirs::cache_dir().expect("failed to find windows cache dir");
-    cache.push(&format!(".{}", XDG_PREFIX));
+    cache.push(&format!("{}", XDG_PREFIX));
+    if !cache.exists() {
+        std::fs::create_dir_all(&cache).expect("failed to write windows cache dirs");
+    }
     cache.push(name);
     cache
 }

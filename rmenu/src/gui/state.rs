@@ -32,7 +32,7 @@ impl ContextBuilder {
         let mut cfg = self.config.unwrap_or_default();
         let entries = server.search(&mut cfg, "").expect("initial search failed");
 
-        let home = shellexpand::tilde("~/").to_string();
+        let home = crate::config::expand_resource("~/");
         let css = self
             .css
             .or(cfg.css.clone())

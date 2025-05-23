@@ -27,7 +27,6 @@ plugins:
     exec:  ["~\\AppData\\Roaming\\rmenu\\plugins\\rmenu-desktop"]
     cache: onlogin
     options:
-      page_size: 500
       use_comments: false
       window_width: 600
       window_height: 500

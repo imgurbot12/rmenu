@@ -14,6 +14,24 @@ fn _true() -> bool {
     true
 }
 
+/// Expand Resource Link into Valid Dioxus Resource Link
+pub fn expand_resource(rsrc: &str) -> String {
+    let rsrc = shellexpand::tilde(rsrc).to_string();
+    //NOTE: windows paths and paths with predefined
+    // extensions like file:// or c:// are broken.
+    // (https://github.com/DioxusLabs/dioxus/issues/1814)
+    if cfg!(target_os = "windows") {
+        if regex::Regex::new(r"^[a-zA-Z]:")
+            .expect("invalid drive regex")
+            .is_match(&rsrc)
+        {
+            let path: Vec<String> = rsrc[2..].split("\\").map(|c| c.to_string()).collect();
+            return format!("http://dioxus.{}{}", &rsrc[..2], path.join("/"));
+        }
+    }
+    rsrc
+}
+
 /// Global RMenu Complete Configuration
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(default, deny_unknown_fields)]
