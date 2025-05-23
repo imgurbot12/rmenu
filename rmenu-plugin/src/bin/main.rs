@@ -1,11 +1,19 @@
 use std::{fmt::Display, str::FromStr};
 
+use base64::prelude::*;
 use rmenu_plugin::*;
 
 use clap::{Args, Parser, Subcommand};
 
 /// Parse Action from JSON
 fn parse_action(action: &str) -> Result<Action, serde_json::Error> {
+    if !action.contains("name") {
+        if let Ok(v) = BASE64_STANDARD.decode(action) {
+            if let Ok(s) = String::from_utf8(v) {
+                return serde_json::from_str(&s);
+            }
+        }
+    }
     serde_json::from_str(action)
 }
 
@@ -67,6 +75,9 @@ struct ActionArgs {
     /// Action Mode
     #[arg(short, long, default_value_t=ActionMode::Run)]
     mode: ActionMode,
+    /// Encode as Bas64 before Returning
+    #[arg(long)]
+    base64: bool,
 }
 
 impl Into<Action> for ActionArgs {
@@ -204,10 +215,10 @@ struct OptionArgs {
     #[arg(long)]
     pub transparent: Option<bool>,
     /// Override Window Width
-    #[arg(short = 'w', long)]
+    #[arg(short = 'W', long)]
     pub window_width: Option<f64>,
     /// Override Window Height
-    #[arg(short = 'h', long)]
+    #[arg(short = 'H', long)]
     pub window_height: Option<f64>,
 }
 
@@ -275,20 +286,29 @@ fn main() {
     let result = match cli.command {
         Command::Entry(args) => {
             let entry: Entry = args.into();
-            serde_json::to_string(&entry)
+            serde_json::to_string(&entry).expect("JSON Serialization Failed")
         }
         Command::Action(args) => {
+            let base64 = args.base64;
             let action: Action = args.into();
-            serde_json::to_string(&action)
+            let json = serde_json::to_string(&action).expect("JSON Serialization Failed");
+            match base64 {
+                false => json,
+                true => {
+                    let mut buf = String::new();
+                    BASE64_STANDARD.encode_string(json, &mut buf);
+                    buf
+                }
+            }
         }
         Command::Options(args) => {
             let options: Options = args.into();
-            serde_json::to_string(&options)
+            serde_json::to_string(&options).expect("JSON Serialization Failed")
         }
         Command::Stop => {
             let stop = Message::Stop;
-            serde_json::to_string(&stop)
+            serde_json::to_string(&stop).expect("JSON Serialization Failed")
         }
     };
-    println!("{}", result.expect("Serialization Failed"));
+    println!("{result}");
 }

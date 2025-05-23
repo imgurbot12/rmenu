@@ -50,6 +50,35 @@ fn parse_args(exec: &str) -> Vec<String> {
     }
 }
 
+#[cfg(target_os = "windows")]
+fn launch(args: Vec<String>) {
+    let mut cmd = Command::new(&args[0]);
+    let child = match args[0] == "powershell" {
+        true => cmd
+            .args(&args[1..])
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn(),
+        false => cmd
+            .creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
+            .args(&args[1..])
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn(),
+    };
+    if let Err(err) = child {
+        panic!("Command Error: {err:?}");
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn launch(args: Vec<String>) {
+    let err = Command::new(&args[0]).args(&args[1..]).exec();
+    panic!("Command Error: {err:?}");
+}
+
 /// Execute the Entry Action as Specified
 pub fn execute(action: &Action, term: Option<String>) {
     log::info!("executing: {:?} {:?}", action.name, action.exec);
@@ -67,23 +96,5 @@ pub fn execute(action: &Action, term: Option<String>) {
             return;
         }
     };
-
-    #[cfg(target_os = "windows")]
-    {
-        let child = Command::new(&args[0])
-            .creation_flags(DETACHED_PROCESS | CREATE_NEW_PROCESS_GROUP)
-            .args(&args[1..])
-            .stdin(Stdio::inherit())
-            .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .spawn();
-        if let Err(err) = child {
-            panic!("Command Error: {err:?}");
-        }
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let err = Command::new(&args[0]).args(&args[1..]).exec();
-        panic!("Command Error: {err:?}");
-    }
+    launch(args);
 }

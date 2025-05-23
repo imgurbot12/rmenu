@@ -3,6 +3,7 @@
 use std::path::PathBuf;
 
 use image::{imageops::FilterType, DynamicImage, ImageFormat};
+use itertools::Itertools;
 use lnk::encoding::WINDOWS_1252;
 use rayon::prelude::*;
 use rmenu_plugin::{Action, Entry};
@@ -185,7 +186,7 @@ pub fn get_entries(cli: &Cli) -> Vec<Entry> {
     let mut paths = vec![START_PROGRAMS.to_owned()];
     if let Some(path) = dirs::home_dir().map(|h| h.join(USER_START_PROGRAMS)) {
         let s = path.to_string_lossy();
-        paths.push(s.to_string());
+        paths.insert(0, s.to_string());
     };
 
     // collect links from filesystem
@@ -197,6 +198,13 @@ pub fn get_entries(cli: &Cli) -> Vec<Entry> {
         .filter(|e| e.file_type().is_file())
         .map(|e| e.path().to_path_buf())
         .filter(|p| ends_with(&p, "lnk"))
+        .unique_by(|f| match cli.non_unique {
+            true => f.to_str().map(|s| s.to_owned()),
+            false => f
+                .file_name()
+                .and_then(|n| n.to_str())
+                .map(|s| s.to_string()),
+        })
         .collect();
 
     // parse links into entries in parrallel

@@ -5,6 +5,9 @@ use std::io::{BufRead, BufReader, Read, Write};
 use std::path::PathBuf;
 use std::process::{Child, Command, ExitStatus, Stdio};
 
+#[cfg(target_os = "windows")]
+use std::os::windows::process::CommandExt;
+
 use rmenu_plugin::{Entry, Message, Search};
 use thiserror::Error;
 
@@ -416,9 +419,15 @@ impl Plugin {
                     .args
                     .get(0)
                     .ok_or_else(|| RMenuError::InvalidPlugin(self.name.to_owned()))?;
+
+                let mut cmd = Command::new(main);
+                #[cfg(target_os = "windows")]
+                let command = cmd.creation_flags(0x08000000).args(&self.args[1..]);
+                #[cfg(not(target_os = "windows"))]
+                let command = cmd.args(&self.args[1..]);
+
                 self.command = Cmd::Started(
-                    Command::new(main)
-                        .args(&self.args[1..])
+                    command
                         .stdin(Stdio::piped())
                         .stdout(Stdio::piped())
                         .spawn()?,

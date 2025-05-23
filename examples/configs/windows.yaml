@@ -57,7 +57,7 @@ plugins:
       key_jump_prev: ["Arrow-Up"]
       key_jump_next: ["Arrow-Down"]
   powermenu:
-    exec: ["~/.config/rmenu/plugins/powermenu.sh"]
+    exec: ["powershell", "~\\AppData\\Roaming\\rmenu\\plugins\\powermenu.ps1"]
     cache: false
     options:
       hover_select: true

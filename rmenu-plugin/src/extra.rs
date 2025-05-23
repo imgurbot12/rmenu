@@ -13,7 +13,8 @@ pub fn get_exe() -> String {
 /// Generate Open Command to Access Resource
 #[cfg(target_os = "windows")]
 pub fn open_command(resource: impl std::fmt::Debug) -> String {
-    format!("cmd /K start {resource:?}")
+    let rsrc = format!("{resource:?}");
+    format!("cmd /K start {}", rsrc.replace("&", "^&"))
 }
 
 /// Generate Open Command to Access Resource
