@@ -249,7 +249,7 @@ impl IconSpec {
     }
 
     pub fn standard(cfg: &PathBuf, sizes: Vec<usize>, locales: &[&str]) -> Self {
-        let icon_paths = crate::data_dirs("icons");
+        let icon_paths = super::data_dirs("icons");
         let themes = active_themes(cfg, &icon_paths, locales);
         Self::new(icon_paths, themes, sizes)
     }

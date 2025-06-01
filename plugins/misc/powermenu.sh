@@ -9,7 +9,7 @@ main_options() {
   rmenu-build options \
   -C $CSS \
   -n ArrowRight -p ArrowLeft \
-  -w 550 -h 150 -M 0
+  -W 550 -H 150 -M 0
 }
 
 #: desc => generate options for confirm operation
@@ -17,7 +17,7 @@ confirm_options() {
   rmenu-build options \
   -C $CSS \
   -n ArrowRight -p ArrowLeft \
-  -w 300 -h 150 -M 0
+  -W 300 -H 150 -M 0
 }
 
 #: desc => generate confirmation entries

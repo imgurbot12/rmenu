@@ -1,7 +1,9 @@
 //! Linux Implementation for Collecting Desktop Apps
+use std::path::PathBuf;
+
+use freedesktop_desktop_entry::{DesktopEntry, Iter};
 use itertools::Itertools;
 use once_cell::sync::Lazy;
-use rayon::prelude::*;
 use regex::Regex;
 use rmenu_plugin::{Action, Entry, Method};
 
@@ -64,7 +66,7 @@ fn data_dirs(dir: &str) -> Vec<PathBuf> {
         .split(":")
         .map(|p| shellexpand::tilde(p).to_string())
         .map(PathBuf::from)
-        .map(|p| p.join(dir.to_owned()))
+        .map(|p| p.join(dir))
         .filter(|p| p.exists())
         .collect();
     if dir == "icons" {

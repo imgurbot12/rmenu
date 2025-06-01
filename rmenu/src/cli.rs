@@ -157,7 +157,6 @@ impl Args {
     fn find_config(&self, name: &str, base: &Option<String>) -> Option<String> {
         return base.clone().or_else(|| {
             xdg::BaseDirectories::with_prefix(XDG_PREFIX)
-                .expect("Failed to read xdg base dirs")
                 .find_config_file(name)
                 .map(|f| f.to_string_lossy().to_string())
         });

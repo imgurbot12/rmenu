@@ -41,7 +41,8 @@ mod os {
 
     #[inline]
     pub fn is_exec(entry: &walkdir::DirEntry) -> bool {
-        e.metadata()
+        entry
+            .metadata()
             .map(|m| m.permissions().mode() & EXEC_FLAG != 0)
             .unwrap_or(false)
     }

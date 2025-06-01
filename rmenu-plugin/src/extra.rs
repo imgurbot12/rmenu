@@ -63,10 +63,8 @@ pub mod clipboard {
 
     /// Copy Contents to Clipboard and Exit
     pub fn copy_and_exit(content: &str) -> Result<(), String> {
-        let command = get_clipboard_command()?;
-        command
-            .arg(content)
-            .exec()
-            .map_err(|e| format!("exec failed: {e:?}"))
+        let mut command = get_clipboard_command()?;
+        let error = command.arg(content).exec();
+        Err(format!("exec failed: {error:?}"))
     }
 }

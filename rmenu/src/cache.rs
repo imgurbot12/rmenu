@@ -39,7 +39,6 @@ fn cache_file(name: &str) -> PathBuf {
 #[inline]
 fn cache_file(name: &str) -> PathBuf {
     xdg::BaseDirectories::with_prefix(XDG_PREFIX)
-        .expect("Failed to read xdg base dirs")
         .place_cache_file(format!("{name}.cache"))
         .expect("Failed to write xdg cache dirs")
 }

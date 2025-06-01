@@ -1,9 +1,6 @@
 //! Execution Implementation for Entry Actions
+use std::collections::HashMap;
 use std::process::Command;
-use std::{collections::HashMap, process::Stdio};
-
-#[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
 
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::process::CommandExt;
@@ -12,9 +9,6 @@ use rmenu_plugin::{Action, Method};
 use shell_words::split;
 use strfmt::strfmt;
 use which::which;
-
-const DETACHED_PROCESS: u32 = 8u32;
-const CREATE_NEW_PROCESS_GROUP: u32 = 512u32;
 
 /// Find Best Terminal To Execute
 fn find_terminal() -> String {
@@ -52,6 +46,12 @@ fn parse_args(exec: &str) -> Vec<String> {
 
 #[cfg(target_os = "windows")]
 fn launch(args: Vec<String>) {
+    use std::os::windows::process::CommandExt;
+    use std::process::Stdio;
+
+    const DETACHED_PROCESS: u32 = 8u32;
+    const CREATE_NEW_PROCESS_GROUP: u32 = 512u32;
+
     let mut cmd = Command::new(&args[0]);
     let child = match args[0] == "powershell" {
         true => cmd
