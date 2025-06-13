@@ -3105,7 +3105,7 @@ dependencies = [
 [[package]]
 name = "lastlog"
 version = "0.3.0"
-source = "git+https://github.com/imgurbot12/lastlog#09d6780c97bbf956d58bd0662d3f64bd56c48ffc"
+source = "git+https://github.com/imgurbot12/lastlog#3d55826fa50b27314c4afa9c0e277a98e57f1609"
 dependencies = [
  "libc",
  "windows-sys 0.59.0",

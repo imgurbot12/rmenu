@@ -366,6 +366,7 @@ impl Plugin {
                     }
                 }
                 // spawn command for later processing
+                log::debug!("executing plugin {:?}", self.args);
                 let main = self
                     .args
                     .get(0)
