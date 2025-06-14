@@ -142,7 +142,13 @@ fn main() -> anyhow::Result<()> {
                         }
                     };
                     let path = entry.path();
-                    let path_str = path.to_str().expect("invalid path string");
+                    let path_str = match path.to_str() {
+                        Some(pstr) => pstr,
+                        None => {
+                            log::error!("path is not utf-8: {path:?}");
+                            return WalkState::Continue;
+                        }
+                    };
                     if !pattern.is_match(path_str) || path_str == "." {
                         return WalkState::Continue;
                     }
