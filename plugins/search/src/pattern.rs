@@ -6,7 +6,7 @@ use crate::bang::Bang;
 
 const RE_URL: &'static str =
     r"(?i)^[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)$";
-const RE_GH_REPO: &'static str = r"^(\w+)/(\w+)$";
+const RE_GH_REPO: &'static str = r"^([\w-]+)/([\w-]+)$";
 
 trait Pattern {
     fn is_match(&self, search: &str, bang: Option<&Bang>) -> Option<Vec<Entry>>;
