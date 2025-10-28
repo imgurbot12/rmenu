@@ -9,7 +9,7 @@ use rmenu_plugin::{Entry, Message, Search};
 use thiserror::Error;
 
 use super::config::{Config, Format, PluginConfig};
-use super::search::new_searchfn;
+use super::search::filter;
 
 #[derive(Error, Debug)]
 pub enum RMenuError {
@@ -262,18 +262,17 @@ impl Input {
     pub fn search(&mut self, config: &mut Config, query: &str) -> Result<Vec<Entry>> {
         let search = new_search(query, &config);
         let entries = match self.results.as_ref() {
-            Some(results) => results.clone(),
+            Some(results) => results,
             None => {
                 log::info!("reading from: {:?}", self.input);
                 let path = File::open(&self.input)?;
                 let reader = BufReader::new(&path);
                 let entries = read_entries(&self.format, config, reader)?;
                 self.results = Some(entries.clone());
-                entries
+                self.results.as_ref().expect("missing search results")
             }
         };
-        let filter = new_searchfn(&search);
-        Ok(entries.into_iter().filter(|e| filter(e)).collect())
+        Ok(filter(&search, entries))
     }
 }
 
@@ -317,8 +316,7 @@ impl Plugin {
 
     pub fn memory_search(&mut self, search: &Search) -> Result<Vec<Entry>> {
         let results = self.results.as_ref().expect("results should be set");
-        let filter = new_searchfn(&search);
-        return Ok(results.iter().filter(|e| filter(e)).cloned().collect());
+        Ok(filter(search, results))
     }
 
     pub fn write_cache(&mut self, config: &mut Config, query: &str) {
